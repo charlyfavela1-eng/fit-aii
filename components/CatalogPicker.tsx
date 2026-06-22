@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { catalog, Garment } from '@/lib/catalog'
 
 interface CatalogPickerProps {
@@ -7,51 +8,88 @@ interface CatalogPickerProps {
   onSelect: (g: Garment) => void
 }
 
-const sizeColors: Record<string, string> = {
-  XS: 'bg-purple-700',
-  S: 'bg-blue-700',
-  M: 'bg-green-700',
-  L: 'bg-yellow-700',
-  XL: 'bg-orange-700',
-  XXL: 'bg-red-700',
-}
+const categories = [
+  { id: 'all', label: 'Todo' },
+  { id: 'tops', label: 'Tops' },
+  { id: 'outerwear', label: 'Exteriores' },
+  { id: 'dresses', label: 'Vestidos' },
+]
 
 export default function CatalogPicker({ selected, onSelect }: CatalogPickerProps) {
+  const [activeCategory, setActiveCategory] = useState('all')
+
+  const filtered = activeCategory === 'all'
+    ? catalog
+    : catalog.filter(g => g.category === activeCategory)
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {catalog.map(garment => (
-        <button
-          key={garment.id}
-          onClick={() => onSelect(garment)}
-          className={`relative flex flex-col rounded-2xl overflow-hidden border-2 transition text-left ${
-            selected?.id === garment.id
-              ? 'border-sky-400 shadow-lg shadow-sky-900/50'
-              : 'border-gray-700 hover:border-gray-500'
-          }`}
-        >
-          <div className="h-40 bg-gradient-to-br from-gray-800 to-gray-700 flex items-center justify-center text-6xl">
-            {garment.type === 'hoodie' ? '🧥' :
-             garment.type === 'camiseta' ? '👕' :
-             garment.type === 'chamarra' ? '🥼' :
-             garment.type === 'vestido' ? '👗' : '👔'}
-          </div>
-          <div className="p-3 bg-gray-900 flex-1">
-            <p className="font-semibold text-sm leading-tight">{garment.name}</p>
-            <p className="text-gray-400 text-xs mt-0.5">{garment.color}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className={`${sizeColors[garment.size]} text-xs font-bold px-2 py-0.5 rounded-full`}>
-                {garment.size}
+    <div className="flex flex-col gap-4">
+      {/* Category tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {categories.map(cat => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
+              activeCategory === cat.id
+                ? 'bg-gradient-to-r from-brand-500 to-accent-500 text-white'
+                : 'glass text-gray-400 hover:text-white'
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {filtered.map(garment => (
+          <button
+            key={garment.id}
+            onClick={() => onSelect(garment)}
+            className={`relative flex flex-col rounded-2xl overflow-hidden text-left transition ${
+              selected?.id === garment.id ? 'card-selected' : 'card'
+            }`}
+          >
+            {/* Color swatch + emoji */}
+            <div
+              className="h-36 flex items-center justify-center text-6xl relative"
+              style={{ backgroundColor: garment.colorHex + '22' }}
+            >
+              <div
+                className="absolute inset-0 opacity-30"
+                style={{
+                  background: `radial-gradient(ellipse at 50% 30%, ${garment.colorHex}55 0%, transparent 70%)`,
+                }}
+              />
+              <span className="relative z-10 drop-shadow-lg" style={{ fontSize: 56 }}>
+                {garment.emoji}
               </span>
-              <span className="text-gray-500 text-xs">{garment.type}</span>
+              {selected?.id === garment.id && (
+                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
             </div>
-          </div>
-          {selected?.id === garment.id && (
-            <div className="absolute top-2 right-2 w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center text-xs font-bold">
-              ✓
+
+            {/* Info */}
+            <div className="p-3 flex flex-col gap-1">
+              <p className="font-bold text-sm leading-tight">{garment.name}</p>
+              <p className="text-gray-400 text-xs">{garment.color}</p>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/10 text-gray-300">
+                  Talla {garment.size}
+                </span>
+                <span className="text-brand-400 text-xs font-bold">
+                  ${garment.price.toLocaleString('es-MX')}
+                </span>
+              </div>
             </div>
-          )}
-        </button>
-      ))}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

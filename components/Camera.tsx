@@ -3,7 +3,7 @@
 import { useRef, useState, useCallback } from 'react'
 
 interface CameraProps {
-  onCapture: (base64: string) => void
+  onCapture: (base64: string, preview: string) => void
 }
 
 export default function Camera({ onCapture }: CameraProps) {
@@ -13,23 +13,23 @@ export default function Camera({ onCapture }: CameraProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [facing, setFacing] = useState<'user' | 'environment'>('user')
+  const [loading, setLoading] = useState(false)
 
   const startCamera = useCallback(async (facingMode: 'user' | 'environment' = 'user') => {
+    setLoading(true)
     try {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop())
-      }
+      if (stream) stream.getTracks().forEach(t => t.stop())
       const s = await navigator.mediaDevices.getUserMedia({
         video: { facingMode, width: { ideal: 1080 }, height: { ideal: 1440 } },
         audio: false,
       })
       setStream(s)
       setError(null)
-      if (videoRef.current) {
-        videoRef.current.srcObject = s
-      }
+      if (videoRef.current) videoRef.current.srcObject = s
     } catch {
       setError('No se pudo acceder a la cámara. Verifica los permisos del navegador.')
+    } finally {
+      setLoading(false)
     }
   }, [stream])
 
@@ -43,6 +43,7 @@ export default function Camera({ onCapture }: CameraProps) {
     const video = videoRef.current
     const canvas = canvasRef.current
     if (!video || !canvas) return
+
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')!
@@ -51,12 +52,13 @@ export default function Camera({ onCapture }: CameraProps) {
       ctx.scale(-1, 1)
     }
     ctx.drawImage(video, 0, 0)
+
     const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
     const base64 = dataUrl.split(',')[1]
     setPreview(dataUrl)
     stream?.getTracks().forEach(t => t.stop())
     setStream(null)
-    onCapture(base64)
+    onCapture(base64, dataUrl)
   }
 
   const retake = () => {
@@ -64,34 +66,36 @@ export default function Camera({ onCapture }: CameraProps) {
     startCamera(facing)
   }
 
-  if (error) {
+  if (preview) {
     return (
-      <div className="flex flex-col items-center gap-4 p-6 bg-gray-900 rounded-2xl">
-        <p className="text-red-400 text-sm text-center">{error}</p>
-        <button
-          onClick={() => startCamera(facing)}
-          className="px-6 py-3 bg-sky-600 rounded-xl font-semibold hover:bg-sky-500 transition"
-        >
-          Reintentar
-        </button>
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative w-full rounded-2xl overflow-hidden" style={{ aspectRatio: '3/4', maxHeight: 400 }}>
+          <img src={preview} alt="Tu foto" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 bg-green-500/20 border border-green-500/40 px-3 py-1.5 rounded-full">
+              <div className="w-2 h-2 rounded-full bg-green-400" />
+              <span className="text-green-300 text-xs font-semibold">Foto tomada</span>
+            </div>
+            <button
+              onClick={retake}
+              className="text-white/70 text-xs underline hover:text-white transition"
+            >
+              Tomar otra
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
-  if (preview) {
+  if (error) {
     return (
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative w-full max-w-sm rounded-2xl overflow-hidden">
-          <img src={preview} alt="Tu foto" className="w-full object-cover" />
-          <div className="absolute top-3 left-3 bg-green-500 text-xs font-bold px-2 py-1 rounded-full">
-            ✓ Foto tomada
-          </div>
-        </div>
-        <button
-          onClick={retake}
-          className="px-5 py-2 bg-gray-700 rounded-xl text-sm hover:bg-gray-600 transition"
-        >
-          Tomar otra foto
+      <div className="flex flex-col items-center gap-4 p-8 rounded-2xl border border-red-900/50 bg-red-950/20">
+        <div className="text-4xl">📵</div>
+        <p className="text-red-400 text-sm text-center leading-relaxed">{error}</p>
+        <button onClick={() => startCamera(facing)} className="btn-primary px-6 py-3 text-sm">
+          Reintentar
         </button>
       </div>
     )
@@ -99,48 +103,70 @@ export default function Camera({ onCapture }: CameraProps) {
 
   if (!stream) {
     return (
-      <div className="flex flex-col items-center gap-4 p-8 bg-gray-900 rounded-2xl border-2 border-dashed border-gray-700">
-        <div className="text-6xl">📷</div>
-        <p className="text-gray-400 text-center text-sm">
-          Necesitamos acceso a tu cámara para mostrarte cómo te queda la ropa
-        </p>
+      <div className="flex flex-col items-center gap-6 p-8 rounded-2xl card">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-500/20 to-accent-500/20 flex items-center justify-center text-4xl animate-float">
+          📸
+        </div>
+        <div className="text-center">
+          <p className="font-bold text-lg mb-1">Activa tu cámara</p>
+          <p className="text-gray-400 text-sm leading-relaxed">
+            Necesitamos acceder a tu cámara para mostrarte cómo te queda la ropa
+          </p>
+        </div>
         <button
           onClick={() => startCamera(facing)}
-          className="px-8 py-3 bg-sky-600 rounded-xl font-bold text-lg hover:bg-sky-500 transition"
+          disabled={loading}
+          className="btn-primary w-full py-4 text-base"
         >
-          Activar cámara
+          {loading ? 'Conectando...' : 'Activar cámara'}
         </button>
+        <p className="text-gray-600 text-xs text-center">
+          Tu foto se procesa de forma privada y no se almacena
+        </p>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="relative w-full max-w-sm rounded-2xl overflow-hidden bg-black">
+      <div
+        className="relative w-full rounded-2xl overflow-hidden bg-black"
+        style={{ aspectRatio: '3/4', maxHeight: 400 }}
+      >
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full"
+          className="w-full h-full object-cover"
           style={{ transform: facing === 'user' ? 'scaleX(-1)' : 'none' }}
         />
-        <div className="absolute inset-0 border-4 border-sky-500/30 rounded-2xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-80 border-2 border-white/40 rounded-full pointer-events-none" />
+        {/* Guide overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-44 h-72 border-2 border-white/30 rounded-full" />
+        </div>
+        {/* Corner brackets */}
+        <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-brand-400/70 rounded-tl-lg" />
+        <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-brand-400/70 rounded-tr-lg" />
+        <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-brand-400/70 rounded-bl-lg" />
+        <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-brand-400/70 rounded-br-lg" />
+        <div className="absolute bottom-3 left-0 right-0 text-center">
+          <p className="text-white/50 text-xs">Párate de frente, cuerpo completo</p>
+        </div>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex w-full gap-3">
         <button
           onClick={flipCamera}
-          className="px-4 py-3 bg-gray-700 rounded-xl text-sm hover:bg-gray-600 transition"
+          className="glass px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition"
         >
-          🔄 Cambiar cámara
+          🔄
         </button>
         <button
           onClick={capture}
-          className="px-8 py-3 bg-sky-600 rounded-xl font-bold text-lg hover:bg-sky-500 active:scale-95 transition"
+          className="btn-primary flex-1 py-4 text-base"
         >
-          📸 Tomar foto
+          📸 Capturar foto
         </button>
       </div>
 
