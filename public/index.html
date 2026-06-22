@@ -803,7 +803,29 @@ function selectGarment(id){
 
 function updateGenBtn(){
   const btn=document.getElementById('gen-btn'); if(!btn) return;
-  btn.disabled = !state.selectedGarment || !state.personSize || !hasCredits();
+  const ready = state.selectedGarment && state.personSize && hasCredits();
+  btn.disabled = !ready;
+
+  // Show checklist of what's still needed
+  let hint='';
+  if(!state.personSize && !state.selectedGarment){
+    hint='Selecciona tu talla y una prenda para continuar';
+  } else if(!state.personSize){
+    hint='Falta: selecciona tu talla ↑';
+  } else if(!state.selectedGarment){
+    hint='Falta: elige una prenda del catálogo ↑';
+  } else if(!hasCredits()){
+    hint='Sin créditos disponibles';
+  }
+
+  let hintEl = document.getElementById('gen-hint');
+  if(!hintEl){
+    hintEl = document.createElement('p');
+    hintEl.id='gen-hint';
+    hintEl.style.cssText='text-align:center;font-size:.75rem;color:#6b7280;margin-top:.5rem';
+    btn.parentNode.appendChild(hintEl);
+  }
+  hintEl.textContent = hint;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -845,50 +867,90 @@ function updateGenMsg(){
 
 async function callGenerateAPI(){
   const prompt = buildPrompt(state.selectedGarment, state.personSize);
+  const ATLAS_KEY = 'apikey-b27686b0396547b8986c7783809a7791';
+  const ATLAS_URL = 'https://api.atlascloud.ai/api/v1/model';
+
   try {
-    const res = await fetch('/api/generate',{
+    const res = await fetch(`${ATLAS_URL}/generateImage`, {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({photoBase64:state.photoBase64, prompt}),
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${ATLAS_KEY}`,
+      },
+      body:JSON.stringify({
+        model:'google/nano-banana-2/edit',
+        prompt,
+        image: state.photoBase64,
+        enable_sync_mode: false,
+      }),
     });
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error||`Error ${res.status}`);
-    if(data.status==='completed'&&data.imageUrl){
-      finishResult(data.imageUrl);
-    } else if(data.status==='pending'&&data.predictionId){
-      await pollResult(data.predictionId);
-    } else {
-      throw new Error('Respuesta inesperada del servidor');
+
+    if(!res.ok){
+      const txt = await res.text();
+      throw new Error(`Atlas API ${res.status}: ${txt.slice(0,200)}`);
     }
+
+    const data = await res.json();
+
+    // Sync response — image returned immediately
+    if(data.images && data.images[0]){
+      finishResult(data.images[0]); return;
+    }
+    if(data.image){
+      finishResult(data.image); return;
+    }
+    // Async response — need to poll
+    const predId = data.id || data.prediction_id;
+    if(predId){
+      await pollResult(predId); return;
+    }
+    throw new Error('Respuesta inesperada del servidor');
+
   } catch(e){
     clearInterval(state.genMsgInterval);
+    // Refund credit on failure
+    const cur = getCredits();
+    localStorage.setItem('fitaii_credits_v1', String(cur+1));
+    state.credits = cur+1;
     goTo('catalog');
     showError('catalog', e.message||'Error desconocido');
-    state.credits=getCredits();
   }
 }
 
 async function pollResult(predictionId){
+  const ATLAS_KEY = 'apikey-b27686b0396547b8986c7783809a7791';
+  const ATLAS_URL = 'https://api.atlascloud.ai/api/v1/model';
   state.pollActive=true;
   let attempts=0;
   while(state.pollActive && attempts<40){
     await sleep(3000);
     attempts++;
     try {
-      const res=await fetch(`/api/poll?id=${predictionId}`);
+      const res=await fetch(`${ATLAS_URL}/prediction/${predictionId}`,{
+        headers:{'Authorization':`Bearer ${ATLAS_KEY}`},
+      });
       const data=await res.json();
-      if(data.status==='completed'&&data.imageUrl){ finishResult(data.imageUrl); return; }
-      if(data.status==='failed') throw new Error(data.error||'Generación fallida');
+      const status = data.status;
+      if(status==='succeeded'||status==='completed'){
+        const url = data.output?.[0] ?? data.images?.[0] ?? data.image;
+        finishResult(url); return;
+      }
+      if(status==='failed') throw new Error(data.error||'Generación fallida');
     } catch(e){
       clearInterval(state.genMsgInterval);
+      const cur = getCredits();
+      localStorage.setItem('fitaii_credits_v1', String(cur+1));
+      state.credits = cur+1;
       goTo('catalog');
       showError('catalog', e.message||'Error al obtener resultado');
-      state.credits=getCredits();
       return;
     }
   }
   if(state.pollActive){
     clearInterval(state.genMsgInterval);
+    const cur = getCredits();
+    localStorage.setItem('fitaii_credits_v1', String(cur+1));
+    state.credits = cur+1;
     goTo('catalog');
     showError('catalog','Tiempo de espera agotado. Inténtalo de nuevo.');
   }
