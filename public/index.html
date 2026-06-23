@@ -1,92 +1,90 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<meta name="theme-color" content="#030712" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="theme-color" content="#030712"/>
 <title>FitAI — Pruébate ropa con Inteligencia Artificial</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --brand:#0ea5e9;--brand2:#8b5cf6;
-  --bg:#030712;--surface:#0f172a;--card:rgba(255,255,255,0.04);
-  --border:rgba(255,255,255,0.08);--text:#f9fafb;--muted:#6b7280;
+  --bg:#030712;--card:rgba(255,255,255,0.04);
+  --border:rgba(255,255,255,0.08);--muted:#6b7280;
 }
-html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
-body{overflow-x:hidden}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:#f9fafb;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
 img{display:block;max-width:100%}
 a{color:inherit;text-decoration:none}
 
 /* ── LAYOUT ── */
-#app{min-height:100vh;display:flex;flex-direction:column;max-width:430px;margin:0 auto}
-.screen{display:none;flex:1;flex-direction:column}
+#app{min-height:100vh;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
 .screen.active{display:flex}
+.flex1{flex:1;min-height:0}
+.scroll{overflow-y:auto}
 
 /* ── UTILS ── */
-.gradient-text{background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gtext{background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .glass{background:rgba(255,255,255,0.05);backdrop-filter:blur(12px);border:1px solid var(--border)}
 .card{background:var(--card);border:1px solid var(--border);border-radius:1.25rem}
-.card-sel{background:rgba(14,165,233,0.08);border-color:var(--brand);box-shadow:0 0 0 1px rgba(14,165,233,0.25)}
 .hero-bg{background:
-  radial-gradient(ellipse 80% 50% at 50% -5%,rgba(14,165,233,0.18) 0%,transparent 70%),
-  radial-gradient(ellipse 60% 40% at 85% 80%,rgba(139,92,246,0.12) 0%,transparent 60%),
+  radial-gradient(ellipse 80% 50% at 50% -5%,rgba(14,165,233,.18) 0%,transparent 70%),
+  radial-gradient(ellipse 60% 40% at 85% 80%,rgba(139,92,246,.12) 0%,transparent 60%),
   var(--bg)}
-.btn{display:block;width:100%;padding:1rem;border-radius:1rem;font-size:1rem;font-weight:700;text-align:center;transition:.15s;cursor:pointer}
-.btn-primary{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none}
-.btn-primary:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 28px rgba(14,165,233,.3)}
-.btn-primary:active{transform:scale(.98)}
-.btn-primary:disabled{opacity:.35;transform:none;box-shadow:none;cursor:not-allowed}
-.btn-ghost{background:rgba(255,255,255,0.06);border:1px solid var(--border);color:#d1d5db;border-radius:1rem;padding:.75rem}
-.btn-ghost:hover{background:rgba(255,255,255,0.10)}
+.btn{display:block;width:100%;padding:1rem;border-radius:1rem;font-size:1rem;font-weight:700;text-align:center;transition:.15s;cursor:pointer;border:none}
+.btn-p{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+.btn-p:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 28px rgba(14,165,233,.3)}
+.btn-p:active{transform:scale(.98)}
+.btn-p:disabled{opacity:.35;transform:none;box-shadow:none;cursor:not-allowed}
+.btn-g{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#d1d5db;border-radius:1rem;padding:.75rem}
+.btn-g:hover{background:rgba(255,255,255,.1)}
 
 /* ── HEADER ── */
-.header{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;background:rgba(3,7,18,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
-.header-back{font-size:1.25rem;color:var(--muted);padding:.25rem;transition:.15s}
-.header-back:hover{color:#fff}
+.hdr{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;background:rgba(3,7,18,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;flex-shrink:0}
+.hdr-back{font-size:1.25rem;color:var(--muted);padding:.25rem;transition:.15s}
+.hdr-back:hover{color:#fff}
 .step-bar{display:flex;align-items:center;gap:.5rem;flex:1}
-.step-dot{width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;transition:.25s;background:rgba(255,255,255,0.08);color:var(--muted)}
-.step-dot.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
-.step-dot.done{background:var(--brand);color:#fff}
-.step-label{font-size:.75rem;font-weight:600;color:var(--muted);transition:.25s}
-.step-label.active{color:#fff}
-.step-label.done{color:var(--brand)}
-.step-line{flex:1;height:1px;background:rgba(255,255,255,0.08);transition:.25s}
-.step-line.done{background:rgba(14,165,233,.4)}
-.credit-pill{display:flex;align-items:center;gap:.3rem;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:99px;padding:.3rem .7rem;font-size:.75rem;font-weight:700}
+.sdot{width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;transition:.25s;background:rgba(255,255,255,.08);color:var(--muted)}
+.sdot.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+.sdot.done{background:var(--brand);color:#fff}
+.slbl{font-size:.75rem;font-weight:600;color:var(--muted);transition:.25s}
+.slbl.active{color:#fff}.slbl.done{color:var(--brand)}
+.sline{flex:1;height:1px;background:rgba(255,255,255,.08);transition:.25s}
+.sline.done{background:rgba(14,165,233,.4)}
+.cpill{display:flex;align-items:center;gap:.3rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:99px;padding:.3rem .7rem;font-size:.75rem;font-weight:700}
 
 /* ── LANDING ── */
-#landing{padding:0}
-.land-nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem}
-.land-logo{font-size:1.4rem;font-weight:900}
-.land-badge{background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:99px;padding:.3rem .75rem;font-size:.7rem;color:var(--muted)}
-.land-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:1.5rem 1.5rem 0}
-.emojis-wrap{position:relative;width:11rem;height:11rem;margin-bottom:2rem}
-.emoji-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.emoji-center-inner{width:5rem;height:5rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.25),rgba(139,92,246,.25));display:flex;align-items:center;justify-content:center;font-size:2rem;animation:pulse-ring 2s ease-out infinite}
+.lnav{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;flex-shrink:0}
+.llogo{font-size:1.4rem;font-weight:900}
+.lbadge{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:99px;padding:.3rem .75rem;font-size:.7rem;color:var(--muted)}
+.lhero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:1.5rem 1.5rem 0;flex-shrink:0}
+.ewrap{position:relative;width:11rem;height:11rem;margin-bottom:2rem}
+.ecenter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.ecenter-i{width:5rem;height:5rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.25),rgba(139,92,246,.25));display:flex;align-items:center;justify-content:center;font-size:2rem;animation:pulse-ring 2s ease-out infinite}
 .e1,.e2,.e3,.e4{position:absolute;font-size:2.75rem}
 .e1{top:0;left:2rem;animation:float 3s ease-in-out infinite}
 .e2{top:2rem;right:0;animation:float 3s ease-in-out .8s infinite}
 .e3{bottom:2rem;left:0;animation:float 3s ease-in-out 1.2s infinite}
 .e4{bottom:0;right:2rem;animation:float 3s ease-in-out .4s infinite}
-.land-title{font-size:2.25rem;font-weight:900;line-height:1.1;margin-bottom:1rem}
-.land-sub{color:var(--muted);font-size:.95rem;line-height:1.6;max-width:18rem;margin-bottom:.5rem}
-.land-pills{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin:1rem 0 2rem}
-.pill{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:99px;padding:.3rem .85rem;font-size:.75rem;color:#d1d5db}
-.land-cta-area{padding:0 1.25rem 2rem;display:flex;flex-direction:column;gap:.75rem}
-.land-cta-note{text-align:center;font-size:.75rem;color:var(--muted)}
-.how-section{padding:1.5rem 1.25rem 3rem}
-.how-label{text-align:center;font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
-.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
-.how-card{padding:.875rem .625rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center}
-.how-icon{font-size:1.5rem}
-.how-title{font-size:.75rem;font-weight:700}
-.how-desc{font-size:.65rem;color:var(--muted);line-height:1.5}
+.ltitle{font-size:2.25rem;font-weight:900;line-height:1.1;margin-bottom:1rem}
+.lsub{color:var(--muted);font-size:.95rem;line-height:1.6;max-width:18rem;margin-bottom:.5rem}
+.lpills{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin:1rem 0 2rem}
+.pill{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:99px;padding:.3rem .85rem;font-size:.75rem;color:#d1d5db}
+.lcta{padding:0 1.25rem 2rem;display:flex;flex-direction:column;gap:.75rem;flex-shrink:0}
+.lcta-note{text-align:center;font-size:.75rem;color:var(--muted)}
+.howsec{padding:1.5rem 1.25rem 3rem;flex-shrink:0}
+.howlbl{text-align:center;font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.howgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.howcard{padding:.875rem .625rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center}
+.howicon{font-size:1.5rem}
+.howtitle{font-size:.75rem;font-weight:700}
+.howdesc{font-size:.65rem;color:var(--muted);line-height:1.5}
 
 /* ── CAMERA ── */
-.cam-section{padding:1.25rem}
-.section-title{font-size:1.5rem;font-weight:900;margin-bottom:.25rem}
-.section-sub{font-size:.875rem;color:var(--muted);margin-bottom:1.25rem}
+.camsec{padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
+.sectitle{font-size:1.5rem;font-weight:900;margin-bottom:.25rem}
+.secsub{font-size:.875rem;color:var(--muted)}
 .cam-idle{display:flex;flex-direction:column;align-items:center;gap:1.25rem;padding:2.5rem 1.5rem;text-align:center}
 .cam-idle-icon{width:5rem;height:5rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.2),rgba(139,92,246,.2));display:flex;align-items:center;justify-content:center;font-size:2.5rem;animation:float 3s ease-in-out infinite}
 .cam-idle-title{font-size:1.1rem;font-weight:700}
@@ -94,467 +92,415 @@ a{color:inherit;text-decoration:none}
 .cam-idle-note{font-size:.7rem;color:#374151}
 #videoWrap{position:relative;width:100%;border-radius:1.25rem;overflow:hidden;background:#000;aspect-ratio:3/4}
 video{width:100%;height:100%;object-fit:cover}
-.cam-overlay{position:absolute;inset:0;pointer-events:none}
-.cam-guide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.cam-guide-ring{width:10rem;height:16rem;border:2px solid rgba(255,255,255,.25);border-radius:50%}
-.cam-corner{position:absolute;width:2rem;height:2rem;border-color:rgba(56,189,248,.7)}
-.cam-corner.tl{top:.75rem;left:.75rem;border-style:solid;border-width:2px 0 0 2px;border-radius:.4rem 0 0 0}
-.cam-corner.tr{top:.75rem;right:.75rem;border-style:solid;border-width:2px 2px 0 0;border-radius:0 .4rem 0 0}
-.cam-corner.bl{bottom:.75rem;left:.75rem;border-style:solid;border-width:0 0 2px 2px;border-radius:0 0 0 .4rem}
-.cam-corner.br{bottom:.75rem;right:.75rem;border-style:solid;border-width:0 2px 2px 0;border-radius:0 0 .4rem 0}
-.cam-hint{position:absolute;bottom:.75rem;left:0;right:0;text-align:center;font-size:.7rem;color:rgba(255,255,255,.4)}
-.cam-controls{display:flex;gap:.75rem;margin-top:.75rem}
-.cam-flip{width:3rem;height:3rem;border-radius:.875rem;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.cam-capture{flex:1;padding:.875rem;border-radius:.875rem;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
-.cam-capture:hover{opacity:.9}
-.photo-preview-wrap{position:relative;border-radius:1.25rem;overflow:hidden;aspect-ratio:3/4;width:100%}
-.photo-preview-wrap img{width:100%;height:100%;object-fit:cover}
-.photo-preview-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),transparent)}
-.photo-preview-footer{position:absolute;bottom:1rem;left:1rem;right:1rem;display:flex;align-items:center;justify-content:space-between}
-.preview-badge{display:flex;align-items:center;gap:.4rem;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:99px;padding:.35rem .75rem;font-size:.7rem;color:#86efac;font-weight:600}
-.preview-badge-dot{width:.45rem;height:.45rem;border-radius:50%;background:#4ade80}
-.retake-btn{font-size:.75rem;color:rgba(255,255,255,.6);text-decoration:underline;background:none;border:none;cursor:pointer}
+.camov{position:absolute;inset:0;pointer-events:none}
+.camguide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.camring{width:10rem;height:16rem;border:2px solid rgba(255,255,255,.25);border-radius:50%}
+.camcorner{position:absolute;width:2rem;height:2rem;border-color:rgba(56,189,248,.7)}
+.camcorner.tl{top:.75rem;left:.75rem;border-style:solid;border-width:2px 0 0 2px;border-radius:.4rem 0 0 0}
+.camcorner.tr{top:.75rem;right:.75rem;border-style:solid;border-width:2px 2px 0 0;border-radius:0 .4rem 0 0}
+.camcorner.bl{bottom:.75rem;left:.75rem;border-style:solid;border-width:0 0 2px 2px;border-radius:0 0 0 .4rem}
+.camcorner.br{bottom:.75rem;right:.75rem;border-style:solid;border-width:0 2px 2px 0;border-radius:0 0 .4rem 0}
+.camhint{position:absolute;bottom:.75rem;left:0;right:0;text-align:center;font-size:.7rem;color:rgba(255,255,255,.4)}
+.camctrl{display:flex;gap:.75rem;margin-top:.75rem}
+.camflip{width:3rem;height:3rem;border-radius:.875rem;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid var(--border)}
+.camflip:hover{background:rgba(255,255,255,.12)}
+.camcapture{flex:1;padding:.875rem;border-radius:.875rem;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;cursor:pointer}
+.camcapture:hover{opacity:.9}
+.preview-wrap{position:relative;border-radius:1.25rem;overflow:hidden;aspect-ratio:3/4;width:100%}
+.preview-wrap img{width:100%;height:100%;object-fit:cover}
+.preview-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),transparent)}
+.preview-footer{position:absolute;bottom:1rem;left:1rem;right:1rem;display:flex;align-items:center;justify-content:space-between}
+.prev-badge{display:flex;align-items:center;gap:.4rem;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:99px;padding:.35rem .75rem;font-size:.7rem;color:#86efac;font-weight:600}
+.prev-dot{width:.45rem;height:.45rem;border-radius:50%;background:#4ade80}
+.retake-btn{font-size:.75rem;color:rgba(255,255,255,.6);text-decoration:underline;cursor:pointer}
 .retake-btn:hover{color:#fff}
 
+/* ── SIZE / FIT ── */
+.sizesec{display:flex;flex-direction:column;gap:.75rem}
+.sizehdr{display:flex;justify-content:space-between;align-items:center}
+.sizelbl{font-size:.875rem;font-weight:600;color:#d1d5db}
+.sizesub{font-size:.7rem;color:var(--muted)}
+.sizegrid{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem}
+.sbtn{display:flex;flex-direction:column;align-items:center;padding:.5rem .25rem;border-radius:.75rem;transition:.15s;background:rgba(255,255,255,.05);border:1px solid var(--border);cursor:pointer}
+.sbtn:hover{background:rgba(255,255,255,.1)}
+.sbtn.sel{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;box-shadow:0 4px 15px rgba(14,165,233,.3)}
+.sbtn-lbl{font-size:.8rem;font-weight:700}
+.sbtn-sub{font-size:.55rem;opacity:.6;margin-top:.1rem}
+.fitbadge{border-radius:1.1rem;padding:1rem;border:1px solid;display:flex;flex-direction:column;gap:.75rem}
+.fitbadge.green{background:rgba(5,46,22,.5);border-color:rgba(20,83,45,.5)}
+.fitbadge.yellow{background:rgba(66,32,6,.5);border-color:rgba(113,63,18,.5)}
+.fitbadge.red{background:rgba(69,10,10,.5);border-color:rgba(127,29,29,.5)}
+.fbtop{display:flex;align-items:center;justify-content:space-between}
+.fbleft{display:flex;align-items:center;gap:.5rem}
+.fbdot{width:.5rem;height:.5rem;border-radius:50%}
+.fbdot.green{background:#4ade80}.fbdot.yellow{background:#fbbf24}.fbdot.red{background:#f87171}
+.fbname{font-weight:700;font-size:.875rem}
+.fbname.green{color:#4ade80}.fbname.yellow{color:#fbbf24}.fbname.red{color:#f87171}
+.fbsizes{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.25rem}
+.fbbar-wrap{display:flex;flex-direction:column;gap:.35rem}
+.fbbar-track{position:relative;height:.5rem;background:#1f2937;border-radius:99px;overflow:hidden}
+.fbbar-l{position:absolute;left:0;top:0;bottom:0;width:50%;background:rgba(59,130,246,.2)}
+.fbbar-r{position:absolute;right:0;top:0;bottom:0;width:50%;background:rgba(239,68,68,.15)}
+.fbbar-div{position:absolute;top:0;bottom:0;left:50%;width:1px;background:#374151}
+.fbbar-thumb{position:absolute;top:0;height:.5rem;width:.75rem;border-radius:99px;transform:translateX(-50%);transition:.5s}
+.fbbar-thumb.green{background:#4ade80}.fbbar-thumb.yellow{background:#fbbf24}.fbbar-thumb.red{background:#f87171}
+.fbbar-lbls{display:flex;justify-content:space-between;font-size:.6rem;color:#374151}
+.fbdesc{font-size:.75rem;color:var(--muted);line-height:1.5}
+.fbdesc span{font-weight:600}
+.fbdesc span.green{color:#4ade80}.fbdesc span.yellow{color:#fbbf24}.fbdesc span.red{color:#f87171}
+
 /* ── CATALOG ── */
-.catalog-section{padding:1.25rem;display:flex;flex-direction:column;gap:1.25rem}
-.size-section{display:flex;flex-direction:column;gap:.75rem}
-.size-header{display:flex;justify-content:space-between;align-items:center}
-.size-label{font-size:.875rem;font-weight:600;color:#d1d5db}
-.size-sublabel{font-size:.7rem;color:var(--muted)}
-.size-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem}
-.size-btn{display:flex;flex-direction:column;align-items:center;padding:.5rem .25rem;border-radius:.75rem;transition:.15s;background:rgba(255,255,255,.05);border:1px solid var(--border)}
-.size-btn:hover{background:rgba(255,255,255,.1)}
-.size-btn.sel{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;box-shadow:0 4px 15px rgba(14,165,233,.3)}
-.size-btn-label{font-size:.8rem;font-weight:700}
-.size-btn-sub{font-size:.55rem;opacity:.6;margin-top:.1rem}
+.cattabs{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;scrollbar-width:none}
+.cattabs::-webkit-scrollbar{display:none}
+.cattab{flex-shrink:0;padding:.4rem 1rem;border-radius:99px;font-size:.8rem;font-weight:600;transition:.15s;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);cursor:pointer}
+.cattab:hover{color:#fff}
+.cattab.active{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;color:#fff}
+.ggrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.gcard{display:flex;flex-direction:column;border-radius:1.25rem;overflow:hidden;text-align:left;transition:.2s;cursor:pointer;border:1px solid var(--border);background:var(--card)}
+.gcard:hover{border-color:rgba(255,255,255,.15)}
+.gcard.sel{background:rgba(14,165,233,.08);border-color:var(--brand);box-shadow:0 0 0 1px rgba(14,165,233,.25)}
+.gthumb{height:9rem;display:flex;align-items:center;justify-content:center;position:relative}
+.gemoji{font-size:3.25rem;position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+.gcheck{position:absolute;top:.5rem;right:.5rem;width:1.4rem;height:1.4rem;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff}
+.ginfo{padding:.75rem}
+.gname{font-size:.875rem;font-weight:700;line-height:1.2}
+.gcolor{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.gmeta{display:flex;align-items:center;justify-content:space-between;margin-top:.5rem}
+.gsizetag{font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:99px;background:rgba(255,255,255,.08);color:#d1d5db}
+.gprice{font-size:.8rem;font-weight:700;color:var(--brand)}
 
-/* FitBadge */
-.fit-badge{border-radius:1.1rem;padding:1rem;border:1px solid;display:flex;flex-direction:column;gap:.75rem}
-.fit-badge.green{background:rgba(5,46,22,.5);border-color:rgba(20,83,45,.5)}
-.fit-badge.yellow{background:rgba(66,32,6,.5);border-color:rgba(113,63,18,.5)}
-.fit-badge.red{background:rgba(69,10,10,.5);border-color:rgba(127,29,29,.5)}
-.fit-badge-top{display:flex;align-items:center;justify-content:space-between}
-.fit-badge-left{display:flex;align-items:center;gap:.5rem}
-.fit-dot{width:.5rem;height:.5rem;border-radius:50%}
-.fit-dot.green{background:#4ade80}
-.fit-dot.yellow{background:#fbbf24}
-.fit-dot.red{background:#f87171}
-.fit-name{font-weight:700;font-size:.875rem}
-.fit-name.green{color:#4ade80}
-.fit-name.yellow{color:#fbbf24}
-.fit-name.red{color:#f87171}
-.fit-sizes{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.25rem}
-.fit-bar-wrap{display:flex;flex-direction:column;gap:.35rem}
-.fit-bar-track{position:relative;height:.5rem;background:#1f2937;border-radius:99px;overflow:hidden}
-.fit-bar-left{position:absolute;left:0;top:0;bottom:0;width:50%;background:rgba(59,130,246,.2)}
-.fit-bar-right{position:absolute;right:0;top:0;bottom:0;width:50%;background:rgba(239,68,68,.15)}
-.fit-bar-divider{position:absolute;top:0;bottom:0;left:50%;width:1px;background:#374151}
-.fit-bar-thumb{position:absolute;top:0;height:.5rem;width:.75rem;border-radius:99px;transform:translateX(-50%);transition:.5s}
-.fit-bar-thumb.green{background:#4ade80}
-.fit-bar-thumb.yellow{background:#fbbf24}
-.fit-bar-thumb.red{background:#f87171}
-.fit-bar-labels{display:flex;justify-content:space-between;font-size:.6rem;color:#374151}
-.fit-desc{font-size:.75rem;color:var(--muted);line-height:1.5}
-.fit-desc span{font-weight:600}
-.fit-desc span.green{color:#4ade80}
-.fit-desc span.yellow{color:#fbbf24}
-.fit-desc span.red{color:#f87171}
-
-/* Catalog grid */
-.cat-tabs{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;scrollbar-width:none}
-.cat-tabs::-webkit-scrollbar{display:none}
-.cat-tab{flex-shrink:0;padding:.4rem 1rem;border-radius:99px;font-size:.8rem;font-weight:600;transition:.15s;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted)}
-.cat-tab:hover{color:#fff}
-.cat-tab.active{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;color:#fff}
-.garments-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-.garment-card{display:flex;flex-direction:column;border-radius:1.25rem;overflow:hidden;text-align:left;transition:.2s;cursor:pointer;border:1px solid var(--border);background:var(--card)}
-.garment-card:hover{border-color:rgba(255,255,255,.15)}
-.garment-card.sel{background:rgba(14,165,233,.08);border-color:var(--brand);box-shadow:0 0 0 1px rgba(14,165,233,.25)}
-.garment-thumb{height:9rem;display:flex;align-items:center;justify-content:center;position:relative}
-.garment-thumb-emoji{font-size:3.25rem;position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
-.garment-check{position:absolute;top:.5rem;right:.5rem;width:1.4rem;height:1.4rem;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff}
-.garment-info{padding:.75rem}
-.garment-name{font-size:.875rem;font-weight:700;line-height:1.2}
-.garment-color{font-size:.7rem;color:var(--muted);margin-top:.15rem}
-.garment-meta{display:flex;align-items:center;justify-content:space-between;margin-top:.5rem}
-.garment-size-tag{font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:99px;background:rgba(255,255,255,.08);color:#d1d5db}
-.garment-price{font-size:.8rem;font-weight:700;color:var(--brand)}
-
-/* Sticky CTA */
-.sticky-cta{position:sticky;bottom:1.25rem;padding:0 1.25rem;margin-top:-.5rem}
-.no-credit-card{background:rgba(17,24,39,.95);border:1px solid var(--border);border-radius:1.25rem;padding:1.25rem;text-align:center}
-.no-credit-icon{font-size:1.5rem;margin-bottom:.5rem}
-.no-credit-title{font-weight:700;font-size:1rem;margin-bottom:.25rem}
-.no-credit-sub{font-size:.8rem;color:var(--muted)}
+/* ── STICKY CTA ── */
+.sticky-cta{position:sticky;bottom:0;padding:1rem 1.25rem;background:linear-gradient(to top,rgba(3,7,18,1) 60%,transparent);flex-shrink:0}
 
 /* ── GENERATING ── */
-.gen-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;padding:2rem}
-.gen-spinner-wrap{position:relative;width:7rem;height:7rem}
-.gen-spinner{width:7rem;height:7rem;border-radius:50%;border:2px solid rgba(14,165,233,.15);border-top-color:var(--brand);animation:spin 1s linear infinite;position:absolute;inset:0}
-.gen-spinner-inner{position:absolute;inset:.75rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.15),rgba(139,92,246,.15));display:flex;align-items:center;justify-content:center;font-size:1.75rem}
-.gen-text{text-align:center}
-.gen-title{font-size:1.5rem;font-weight:900;margin-bottom:.5rem}
-.gen-msg{color:var(--brand);font-size:.875rem;font-weight:600;min-height:1.25rem;transition:.3s}
-.gen-note{font-size:.7rem;color:#374151;margin-top:.5rem}
-.gen-dots{display:flex;gap:.5rem;margin-top:.5rem}
-.gen-dot{width:.5rem;height:.5rem;border-radius:50%;background:#1f2937;transition:.4s}
-.gen-dot.on{background:var(--brand)}
-.gen-size-note{font-size:.7rem;color:var(--muted);margin-top:.25rem}
+.genscrn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;padding:2rem}
+.genwrap{position:relative;width:7rem;height:7rem}
+.genring{width:7rem;height:7rem;border-radius:50%;border:2px solid rgba(14,165,233,.15);border-top-color:var(--brand);animation:spin 1s linear infinite;position:absolute;inset:0}
+.geninner{position:absolute;inset:.75rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.15),rgba(139,92,246,.15));display:flex;align-items:center;justify-content:center;font-size:1.75rem}
+.gentxt{text-align:center}
+.gentitle{font-size:1.5rem;font-weight:900;margin-bottom:.5rem}
+.genmsg{color:var(--brand);font-size:.875rem;font-weight:600;min-height:1.25rem}
+.gennote{font-size:.7rem;color:#374151;margin-top:.5rem}
+.gendots{display:flex;gap:.5rem;margin-top:.5rem}
+.gendot{width:.5rem;height:.5rem;border-radius:50%;background:#1f2937;transition:.4s}
+.gendot.on{background:var(--brand)}
+.gensizenote{font-size:.7rem;color:var(--muted);margin-top:.25rem}
 
 /* ── RESULT ── */
-.result-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem}
-.result-close{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .75rem;font-size:.875rem;color:var(--muted)}
-.result-close:hover{color:#fff}
-.result-logo{font-size:1.25rem;font-weight:900}
-.result-share-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .875rem;font-size:.8rem;font-weight:600;color:#d1d5db}
-.result-share-btn:hover{color:#fff}
-.result-body{flex:1;overflow-y:auto;padding:0 1.25rem 2rem;display:flex;flex-direction:column;gap:1.25rem}
-.result-title{font-size:1.5rem;font-weight:900;margin-bottom:.35rem}
-.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-.compare-label{font-size:.7rem;font-weight:600;text-align:center;margin-bottom:.4rem;color:var(--muted)}
-.compare-label.ai{color:var(--brand)}
-.compare-img-wrap{border-radius:1.1rem;overflow:hidden;aspect-ratio:3/4;position:relative}
-.compare-img-wrap img{width:100%;height:100%;object-fit:cover}
-.ai-badge{position:absolute;top:.5rem;right:.5rem;background:rgba(14,165,233,.85);color:#fff;font-size:.6rem;font-weight:700;padding:.2rem .5rem;border-radius:99px}
-.garment-info-card{display:flex;align-items:center;gap:.875rem;padding:1rem}
-.garment-info-icon{width:3.5rem;height:3.5rem;border-radius:.875rem;display:flex;align-items:center;justify-content:center;font-size:1.75rem;flex-shrink:0}
-.garment-info-name{font-weight:700;font-size:.95rem}
-.garment-info-brand{font-size:.8rem;color:var(--muted);margin-top:.1rem}
-.garment-info-price{font-size:1.1rem;font-weight:700;color:var(--brand);margin-top:.25rem}
-.result-actions{display:flex;flex-direction:column;gap:.75rem}
-.result-buy-btn{display:block;padding:1.1rem;border-radius:1rem;font-size:1rem;font-weight:700;text-align:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;cursor:pointer;transition:.15s;width:100%}
-.result-buy-btn:hover{opacity:.9;transform:translateY(-1px)}
-.result-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-.result-secondary{padding:.875rem;border-radius:1rem;font-size:.875rem;font-weight:600;text-align:center;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#d1d5db;cursor:pointer;transition:.15s;width:100%}
-.result-secondary:hover{background:rgba(255,255,255,.1);color:#fff}
-.result-link{display:block;padding:.875rem;border-radius:1rem;font-size:.875rem;font-weight:600;text-align:center;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#d1d5db;cursor:pointer;transition:.15s;width:100%}
-.result-link:hover{background:rgba(255,255,255,.1);color:#fff}
-.result-restart{text-align:center;font-size:.875rem;color:var(--muted);background:none;border:none;cursor:pointer;width:100%;padding:.5rem}
-.result-restart:hover{color:#fff}
+.rhdnr{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;flex-shrink:0}
+.rclose{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .75rem;font-size:.875rem;color:var(--muted);cursor:pointer}
+.rclose:hover{color:#fff}
+.rlogo{font-size:1.25rem;font-weight:900}
+.rshare{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .875rem;font-size:.8rem;font-weight:600;color:#d1d5db;cursor:pointer}
+.rshare:hover{color:#fff}
+.rbody{flex:1;overflow-y:auto;padding:0 1.25rem 2rem;display:flex;flex-direction:column;gap:1.25rem}
+.rtitle{font-size:1.5rem;font-weight:900;margin-bottom:.35rem}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.clbl{font-size:.7rem;font-weight:600;text-align:center;margin-bottom:.4rem;color:var(--muted)}
+.clbl.ai{color:var(--brand)}
+.cimgwrap{border-radius:1.1rem;overflow:hidden;aspect-ratio:3/4;position:relative}
+.cimgwrap img{width:100%;height:100%;object-fit:cover}
+.aibadge{position:absolute;top:.5rem;right:.5rem;background:rgba(14,165,233,.85);color:#fff;font-size:.6rem;font-weight:700;padding:.2rem .5rem;border-radius:99px}
+.gicard{display:flex;align-items:center;gap:.875rem;padding:1rem}
+.giicon{width:3.5rem;height:3.5rem;border-radius:.875rem;display:flex;align-items:center;justify-content:center;font-size:1.75rem;flex-shrink:0}
+.giname{font-weight:700;font-size:.95rem}
+.gibrand{font-size:.8rem;color:var(--muted);margin-top:.1rem}
+.giprice{font-size:1.1rem;font-weight:700;color:var(--brand);margin-top:.25rem}
+.ractions{display:flex;flex-direction:column;gap:.75rem}
+.rbuy{display:block;padding:1.1rem;border-radius:1rem;font-size:1rem;font-weight:700;text-align:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;cursor:pointer;transition:.15s;width:100%}
+.rbuy:hover{opacity:.9;transform:translateY(-1px)}
+.rrow{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.rsec{padding:.875rem;border-radius:1rem;font-size:.875rem;font-weight:600;text-align:center;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#d1d5db;cursor:pointer;transition:.15s;width:100%}
+.rsec:hover{background:rgba(255,255,255,.1);color:#fff}
+.rrestart{text-align:center;font-size:.875rem;color:var(--muted);cursor:pointer;width:100%;padding:.5rem}
+.rrestart:hover{color:#fff}
+
+/* ── ERROR ── */
+.errbar{display:flex;align-items:flex-start;gap:.75rem;padding:1rem;border-radius:1rem;background:rgba(69,10,10,.6);border:1px solid rgba(127,29,29,.5);margin:.75rem 1.25rem 0;flex-shrink:0}
+.erricon{font-size:1.1rem;flex-shrink:0}
+.errtitle{font-size:.8rem;font-weight:700;color:#fca5a5}
+.errmsg{font-size:.7rem;color:rgba(252,165,165,.6);margin-top:.15rem}
+.errclose{margin-left:auto;color:#7f1d1d;font-size:.875rem;flex-shrink:0;cursor:pointer}
+.errclose:hover{color:#fca5a5}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(4rem);background:rgba(15,23,42,.95);border:1px solid var(--border);color:#e2e8f0;padding:.6rem 1.2rem;border-radius:99px;font-size:.85rem;font-weight:600;z-index:999;transition:transform .3s,opacity .3s;opacity:0;pointer-events:none;white-space:nowrap;backdrop-filter:blur(12px)}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
 /* ── ANIMATIONS ── */
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(14,165,233,.4)}100%{box-shadow:0 0 0 20px rgba(14,165,233,0)}}
-@keyframes fade-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.fade-in{animation:fade-in .35s ease forwards}
-
-/* ── ERROR ── */
-.error-bar{display:flex;align-items:flex-start;gap:.75rem;padding:1rem;border-radius:1rem;background:rgba(69,10,10,.6);border:1px solid rgba(127,29,29,.5);margin:1rem 1.25rem 0}
-.error-icon{font-size:1.1rem;flex-shrink:0}
-.error-title{font-size:.8rem;font-weight:700;color:#fca5a5}
-.error-msg{font-size:.7rem;color:rgba(252,165,165,.6);margin-top:.15rem}
-.error-close{margin-left:auto;color:#7f1d1d;font-size:.875rem;flex-shrink:0;background:none;border:none;cursor:pointer}
-.error-close:hover{color:#fca5a5}
+@keyframes fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fadein{animation:fadein .35s ease forwards}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- ══════════════════════════════════ LANDING ═══════════════════════════════ -->
-  <div id="s-landing" class="screen active hero-bg">
-    <nav class="land-nav">
-      <span class="land-logo gradient-text">FitAI</span>
-      <span class="land-badge">Nano Banana 2 ✨</span>
-    </nav>
-
-    <div class="land-hero">
-      <div class="emojis-wrap">
-        <span class="e1">👗</span>
-        <span class="e2">🧥</span>
-        <span class="e3">👕</span>
-        <span class="e4">✨</span>
-        <div class="emoji-center">
-          <div class="emoji-center-inner">📸</div>
-        </div>
-      </div>
-      <h1 class="land-title">
-        Pruébate ropa<br>
-        <span class="gradient-text">con Inteligencia Artificial</span>
-      </h1>
-      <p class="land-sub">Tómate una selfie y ve cómo te queda cualquier prenda. La IA respeta tu talla real.</p>
-      <p style="color:var(--brand);font-size:.875rem;font-weight:600;margin:.5rem 0 1.25rem">✓ Sin probador &nbsp;·&nbsp; ✓ Sin filas &nbsp;·&nbsp; ✓ 100% IA</p>
-      <div class="land-pills">
-        <span class="pill">Tallas reales</span>
-        <span class="pill">Fit preciso</span>
-        <span class="pill">4K quality</span>
-        <span class="pill">Privado</span>
-      </div>
+<!-- ═══════════════════ LANDING ═══════════════════ -->
+<div id="s-landing" class="screen active hero-bg" style="overflow-y:auto">
+  <nav class="lnav">
+    <span class="llogo gtext">FitAI</span>
+    <span class="lbadge">Nano Banana 2 ✨</span>
+  </nav>
+  <div class="lhero">
+    <div class="ewrap">
+      <span class="e1">👗</span><span class="e2">🧥</span>
+      <span class="e3">👕</span><span class="e4">✨</span>
+      <div class="ecenter"><div class="ecenter-i">📸</div></div>
     </div>
-
-    <div class="land-cta-area">
-      <button class="btn btn-primary" onclick="goTo('photo')" style="padding:1.2rem;font-size:1.1rem">Probar gratis →</button>
-      <p class="land-cta-note">1 prueba gratuita · Sin registro</p>
-    </div>
-
-    <div class="how-section">
-      <p class="how-label">Cómo funciona</p>
-      <div class="how-grid">
-        <div class="card how-card"><span class="how-icon">📸</span><p class="how-title">Tu foto</p><p class="how-desc">Tómate una selfie de cuerpo completo</p></div>
-        <div class="card how-card"><span class="how-icon">👗</span><p class="how-title">Elige prenda</p><p class="how-desc">Selecciona talla y artículo del catálogo</p></div>
-        <div class="card how-card"><span class="how-icon">✨</span><p class="how-title">Ver resultado</p><p class="how-desc">La IA genera cómo te queda en segundos</p></div>
-      </div>
+    <h1 class="ltitle">Pruébate ropa<br><span class="gtext">con Inteligencia Artificial</span></h1>
+    <p class="lsub">Tómate una selfie y ve cómo te queda cualquier prenda. La IA respeta tu talla real.</p>
+    <p style="color:var(--brand);font-size:.875rem;font-weight:600;margin:.5rem 0 1.25rem">✓ Sin probador &nbsp;·&nbsp; ✓ Sin filas &nbsp;·&nbsp; ✓ 100% IA</p>
+    <div class="lpills">
+      <span class="pill">Tallas reales</span>
+      <span class="pill">Fit preciso</span>
+      <span class="pill">4K quality</span>
+      <span class="pill">Privado</span>
     </div>
   </div>
-
-  <!-- ══════════════════════════════════ PHOTO ══════════════════════════════════ -->
-  <div id="s-photo" class="screen" style="flex-direction:column">
-    <div class="header">
-      <button class="header-back" onclick="goTo('landing')">←</button>
-      <div class="step-bar" id="stepbar-photo"></div>
-      <div class="credit-pill"><span style="color:#fbbf24">⚡</span><span id="credit-photo">1</span></div>
-    </div>
-    <div id="error-photo" style="display:none"></div>
-    <div class="cam-section flex-1">
-      <h2 class="section-title">Toma tu foto</h2>
-      <p class="section-sub">Párate de frente, de cuerpo completo</p>
-
-      <!-- Idle state -->
-      <div id="cam-idle" class="card cam-idle">
-        <div class="cam-idle-icon">📸</div>
-        <div>
-          <p class="cam-idle-title">Activa tu cámara</p>
-          <p class="cam-idle-desc">Necesitamos acceso para mostrarte cómo queda la ropa</p>
-        </div>
-        <button class="btn btn-primary" onclick="startCamera()" style="padding:.9rem 2rem;width:auto">Activar cámara</button>
-        <p class="cam-idle-note">Tu foto no se almacena. Procesamiento privado.</p>
-      </div>
-
-      <!-- Camera live -->
-      <div id="cam-live" style="display:none">
-        <div id="videoWrap">
-          <video id="video" autoplay playsinline muted></video>
-          <div class="cam-overlay">
-            <div class="cam-guide"><div class="cam-guide-ring"></div></div>
-            <div class="cam-corner tl"></div>
-            <div class="cam-corner tr"></div>
-            <div class="cam-corner bl"></div>
-            <div class="cam-corner br"></div>
-            <div class="cam-hint">Párate de frente, cuerpo completo</div>
-          </div>
-        </div>
-        <div class="cam-controls">
-          <button class="btn-ghost cam-flip" onclick="flipCamera()">🔄</button>
-          <button class="cam-capture" onclick="capturePhoto()">📸 Capturar foto</button>
-        </div>
-      </div>
-
-      <!-- Photo preview -->
-      <div id="cam-preview" style="display:none">
-        <div class="photo-preview-wrap">
-          <img id="preview-img" src="" alt="Tu foto" />
-          <div class="photo-preview-overlay"></div>
-          <div class="photo-preview-footer">
-            <div class="preview-badge"><div class="preview-badge-dot"></div>Foto tomada</div>
-            <button class="retake-btn" onclick="retakePhoto()">Tomar otra</button>
-          </div>
-        </div>
-        <div style="margin-top:.875rem">
-          <button class="btn btn-primary" onclick="goTo('catalog')" style="padding:1rem">Continuar → Elegir prenda</button>
-        </div>
-      </div>
-
-      <canvas id="canvas" style="display:none"></canvas>
+  <div class="lcta">
+    <button class="btn btn-p" onclick="goTo('photo')" style="padding:1.2rem;font-size:1.1rem">Probar gratis →</button>
+    <p class="lcta-note">1 prueba gratuita · Sin registro</p>
+  </div>
+  <div class="howsec">
+    <p class="howlbl">Cómo funciona</p>
+    <div class="howgrid">
+      <div class="card howcard"><span class="howicon">📸</span><p class="howtitle">Tu foto</p><p class="howdesc">Tómate una selfie de cuerpo completo</p></div>
+      <div class="card howcard"><span class="howicon">👗</span><p class="howtitle">Elige prenda</p><p class="howdesc">Selecciona talla y artículo del catálogo</p></div>
+      <div class="card howcard"><span class="howicon">✨</span><p class="howtitle">Ver resultado</p><p class="howdesc">La IA genera cómo te queda en segundos</p></div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════ CATALOG ════════════════════════════════ -->
-  <div id="s-catalog" class="screen" style="flex-direction:column">
-    <div class="header">
-      <button class="header-back" onclick="goTo('photo')">←</button>
-      <div class="step-bar" id="stepbar-catalog"></div>
-      <div class="credit-pill"><span style="color:#fbbf24">⚡</span><span id="credit-catalog">1</span></div>
+<!-- ═══════════════════ PHOTO ═══════════════════ -->
+<div id="s-photo" class="screen" style="flex-direction:column">
+  <div class="hdr">
+    <button class="hdr-back" onclick="safeGoTo('landing')">←</button>
+    <div class="step-bar" id="sb-photo"></div>
+    <div class="cpill"><span style="color:#fbbf24">⚡</span><span id="cr-photo">1</span></div>
+  </div>
+  <div id="err-photo" style="display:none"></div>
+  <div class="camsec flex1 scroll">
+    <div>
+      <h2 class="sectitle">Toma tu foto</h2>
+      <p class="secsub">Párate de frente, de cuerpo completo</p>
     </div>
-    <div id="error-catalog" style="display:none"></div>
-    <div class="catalog-section flex-1" style="overflow-y:auto">
+    <!-- Idle -->
+    <div id="cam-idle" class="card cam-idle">
+      <div class="cam-idle-icon">📸</div>
       <div>
-        <h2 class="section-title">Elige una prenda</h2>
-        <p class="section-sub" style="margin-bottom:0">Selecciona tu talla y la prenda que quieres probar</p>
+        <p class="cam-idle-title">Activa tu cámara</p>
+        <p class="cam-idle-desc">Necesitamos acceso para mostrarte cómo queda la ropa</p>
       </div>
-
-      <!-- Size picker -->
-      <div class="size-section">
-        <div class="size-header">
-          <span class="size-label">Tu talla</span>
-          <span class="size-sublabel">Talla en cm de pecho</span>
+      <button class="btn btn-p" onclick="startCamera()" style="padding:.9rem 2rem;width:auto">Activar cámara</button>
+      <p class="cam-idle-note">Tu foto no se almacena permanentemente</p>
+    </div>
+    <!-- Live -->
+    <div id="cam-live" style="display:none">
+      <div id="videoWrap">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="camov">
+          <div class="camguide"><div class="camring"></div></div>
+          <div class="camcorner tl"></div><div class="camcorner tr"></div>
+          <div class="camcorner bl"></div><div class="camcorner br"></div>
+          <div class="camhint">Párate de frente, cuerpo completo</div>
         </div>
-        <div class="size-grid" id="size-grid"></div>
       </div>
-
-      <!-- Fit badge -->
-      <div id="fit-badge-wrap"></div>
-
-      <!-- Category tabs -->
-      <div class="cat-tabs" id="cat-tabs"></div>
-
-      <!-- Garments grid -->
-      <div class="garments-grid" id="garments-grid"></div>
-
-      <!-- Spacer for sticky btn -->
-      <div style="height:5rem"></div>
+      <div class="camctrl">
+        <button class="camflip" onclick="flipCamera()" title="Cambiar cámara">🔄</button>
+        <button class="camcapture" onclick="capturePhoto()">📸 Capturar foto</button>
+      </div>
     </div>
+    <!-- Preview -->
+    <div id="cam-preview" style="display:none">
+      <div class="preview-wrap">
+        <img id="preview-img" src="" alt="Tu foto"/>
+        <div class="preview-ov"></div>
+        <div class="preview-footer">
+          <div class="prev-badge"><div class="prev-dot"></div>Foto tomada</div>
+          <button class="retake-btn" onclick="retakePhoto()">Tomar otra</button>
+        </div>
+      </div>
+      <div style="margin-top:.875rem">
+        <button class="btn btn-p" onclick="goTo('catalog')" style="padding:1rem">Continuar → Elegir prenda</button>
+      </div>
+    </div>
+    <canvas id="canvas" style="display:none"></canvas>
+  </div>
+</div>
 
-    <!-- Sticky CTA -->
-    <div class="sticky-cta" id="cta-wrap">
-      <button class="btn btn-primary" id="gen-btn" onclick="handleGenerate()" disabled style="padding:1.1rem;box-shadow:0 -8px 32px rgba(0,0,0,.6)">
-        ✨ Generar mi look <span style="opacity:.6;font-size:.875rem;margin-left:.25rem">· 1 crédito</span>
-      </button>
+<!-- ═══════════════════ CATALOG ═══════════════════ -->
+<div id="s-catalog" class="screen" style="flex-direction:column">
+  <div class="hdr">
+    <button class="hdr-back" onclick="goTo('photo')">←</button>
+    <div class="step-bar" id="sb-catalog"></div>
+    <div class="cpill"><span style="color:#fbbf24">⚡</span><span id="cr-catalog">1</span></div>
+  </div>
+  <div id="err-catalog" style="display:none"></div>
+  <div class="flex1 scroll" style="padding:1.25rem;display:flex;flex-direction:column;gap:1.25rem">
+    <div>
+      <h2 class="sectitle">Elige una prenda</h2>
+      <p class="secsub">Selecciona tu talla y la prenda que quieres probar</p>
+    </div>
+    <div class="sizesec">
+      <div class="sizehdr">
+        <span class="sizelbl">Tu talla</span>
+        <span class="sizesub">Pecho en cm</span>
+      </div>
+      <div class="sizegrid" id="size-grid"></div>
+    </div>
+    <div id="fit-badge-wrap"></div>
+    <div class="cattabs" id="cat-tabs"></div>
+    <div class="ggrid" id="garments-grid"></div>
+    <div style="height:1rem"></div>
+  </div>
+  <div class="sticky-cta">
+    <button class="btn btn-p" id="gen-btn" onclick="handleGenerate()" disabled style="padding:1.1rem">
+      ✨ Generar mi look <span style="opacity:.6;font-size:.875rem;margin-left:.25rem">· 1 crédito</span>
+    </button>
+    <p id="gen-hint" style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:.5rem;min-height:1rem"></p>
+  </div>
+</div>
+
+<!-- ═══════════════════ GENERATING ═══════════════════ -->
+<div id="s-generating" class="screen" style="flex-direction:column">
+  <div class="hdr">
+    <div style="width:2rem"></div>
+    <div class="step-bar" id="sb-gen"></div>
+    <div class="cpill"><span style="color:#fbbf24">⚡</span><span id="cr-gen">0</span></div>
+  </div>
+  <div class="genscrn">
+    <div class="genwrap">
+      <div class="genring"></div>
+      <div class="geninner">✨</div>
+    </div>
+    <div class="gentxt">
+      <h2 class="gentitle">Generando tu look</h2>
+      <p class="genmsg" id="gen-msg">Analizando tu silueta...</p>
+      <p class="gensizenote" id="gen-size-note"></p>
+      <p class="gennote">Esto puede tomar hasta 30 segundos...</p>
+    </div>
+    <div class="gendots">
+      <div class="gendot" id="gd0"></div><div class="gendot" id="gd1"></div>
+      <div class="gendot" id="gd2"></div><div class="gendot" id="gd3"></div>
+      <div class="gendot" id="gd4"></div>
     </div>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════ GENERATING ═════════════════════════════ -->
-  <div id="s-generating" class="screen" style="flex-direction:column">
-    <div class="header">
-      <div style="width:2rem"></div>
-      <div class="step-bar" id="stepbar-gen"></div>
-      <div class="credit-pill"><span style="color:#fbbf24">⚡</span><span id="credit-gen">0</span></div>
-    </div>
-    <div class="gen-screen">
-      <div class="gen-spinner-wrap">
-        <div class="gen-spinner"></div>
-        <div class="gen-spinner-inner">✨</div>
-      </div>
-      <div class="gen-text">
-        <h2 class="gen-title">Generando tu look</h2>
-        <p class="gen-msg" id="gen-msg">Analizando tu silueta...</p>
-        <p class="gen-size-note" id="gen-size-note"></p>
-        <p class="gen-note">Esto puede tomar hasta 30 segundos...</p>
-      </div>
-      <div class="gen-dots" id="gen-dots">
-        <div class="gen-dot" id="gd0"></div>
-        <div class="gen-dot" id="gd1"></div>
-        <div class="gen-dot" id="gd2"></div>
-        <div class="gen-dot" id="gd3"></div>
-        <div class="gen-dot" id="gd4"></div>
-      </div>
-    </div>
+<!-- ═══════════════════ RESULT ═══════════════════ -->
+<div id="s-result" class="screen hero-bg" style="flex-direction:column">
+  <div class="rhdnr">
+    <button class="rclose" onclick="startOver()">✕ Cerrar</button>
+    <span class="rlogo gtext">FitAI</span>
+    <button class="rshare" onclick="shareResult()">📤 Compartir</button>
   </div>
-
-  <!-- ══════════════════════════════════ RESULT ═════════════════════════════════ -->
-  <div id="s-result" class="screen hero-bg" style="flex-direction:column">
-    <div class="result-header">
-      <button class="result-close" onclick="startOver()">✕ Cerrar</button>
-      <span class="result-logo gradient-text">FitAI</span>
-      <button class="result-share-btn" onclick="shareResult()">📤 Compartir</button>
+  <div class="rbody">
+    <div>
+      <h2 class="rtitle">¡Así te vería! ✨</h2>
+      <div id="r-fit-compact"></div>
     </div>
-    <div class="result-body">
+    <div class="cgrid">
       <div>
-        <h2 class="result-title">¡Así te vería! ✨</h2>
-        <div id="result-fit-badge"></div>
+        <p class="clbl">Tu foto</p>
+        <div class="cimgwrap"><img id="r-original" src="" alt="Original"/></div>
       </div>
-
-      <!-- Before / After -->
-      <div class="compare-grid">
-        <div>
-          <p class="compare-label">Tu foto</p>
-          <div class="compare-img-wrap">
-            <img id="result-original" src="" alt="Original" />
-          </div>
+      <div>
+        <p class="clbl ai">Resultado IA</p>
+        <div class="cimgwrap">
+          <img id="r-ai" src="" alt="Resultado IA"/>
+          <div class="aibadge">IA ✨</div>
         </div>
-        <div>
-          <p class="compare-label ai">Resultado IA</p>
-          <div class="compare-img-wrap">
-            <img id="result-ai" src="" alt="Resultado IA" />
-            <div class="ai-badge">IA ✨</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Full fit badge -->
-      <div id="result-fit-badge-full"></div>
-
-      <!-- Garment info -->
-      <div class="card garment-info-card" id="result-garment-card"></div>
-
-      <!-- Actions -->
-      <div class="result-actions">
-        <button class="result-buy-btn" onclick="alert('Conecta tu tienda aquí 🛍️')">🛍️ Comprar ahora</button>
-        <div class="result-row">
-          <button class="result-secondary" onclick="shareResult()">📤 Compartir</button>
-          <a id="result-download" class="result-link" download="fitai-look.jpg">⬇️ Descargar</a>
-        </div>
-        <button class="result-restart" onclick="startOver()">Probar otra prenda →</button>
       </div>
     </div>
+    <div id="r-fit-full"></div>
+    <div class="card gicard" id="r-garment"></div>
+    <div class="ractions">
+      <button class="rbuy" onclick="toast('Conecta aquí tu tienda 🛍️')">🛍️ Comprar ahora</button>
+      <div class="rrow">
+        <button class="rsec" onclick="shareResult()">📤 Compartir</button>
+        <button class="rsec" id="r-download-btn" onclick="downloadResult()">⬇️ Descargar</button>
+      </div>
+      <button class="rrestart" onclick="startOver()">Probar otra prenda →</button>
+    </div>
   </div>
+</div>
 
 </div><!-- #app -->
+<div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════
+const ATLAS_KEY  = 'apikey-b27686b0396547b8986c7783809a7791';
+const ATLAS_URL  = 'https://api.atlascloud.ai/api/v1/model';
+const IMGBB_KEY  = '2e46b80cda78a8b33a47eea45b0de74a';
+const CREDIT_KEY = 'fitaii_credits_v1';
+
+// ══════════════════════════════════════════════════════════
 // STATE
-// ═══════════════════════════════════════════════════════════════════════════
-const state = {
-  view: 'landing',
-  photoBase64: null,
-  photoPreview: null,
-  selectedGarment: null,
-  personSize: null,
-  credits: 1,
-  resultImage: null,
-  error: null,
-  activeCat: 'all',
-  genMsgIdx: 0,
-  genMsgInterval: null,
-  pollActive: false,
-  facing: 'user',
-  stream: null,
+// ══════════════════════════════════════════════════════════
+const S = {
+  view:'landing', photoBase64:null, photoPreview:null,
+  garment:null, size:null, credits:1,
+  resultImage:null, activeCat:'all',
+  msgIdx:0, msgTimer:null, polling:false,
+  facing:'user', stream:null,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // CATALOG DATA
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 const CATALOG = [
-  { id:'hoodie-001', name:'Cloud Hoodie', brand:'FitAI Studio', size:'M', color:'Negro Carbón', colorHex:'#1a1a1a', type:'hoodie', category:'tops', price:1290, emoji:'🖤', chest:108, waist:104, length:70, tags:['oversized','algodón','unisex'] },
-  { id:'tshirt-001', name:'Essential Tee', brand:'FitAI Studio', size:'L', color:'Blanco Óptico', colorHex:'#fafafa', type:'camiseta', category:'tops', price:490, emoji:'🤍', chest:112, waist:108, length:74, tags:['básico','algodón'] },
-  { id:'jacket-001', name:'Moto Jacket', brand:'FitAI Studio', size:'S', color:'Café Cognac', colorHex:'#8B4513', type:'chamarra', category:'outerwear', price:2490, emoji:'🤎', chest:98, waist:94, length:62, tags:['piel sintética','moto'] },
-  { id:'dress-001', name:'Linen Midi Dress', brand:'FitAI Studio', size:'XS', color:'Azul Cielo', colorHex:'#87CEEB', type:'vestido', category:'dresses', price:1890, emoji:'💙', chest:84, waist:68, hips:90, length:95, tags:['lino','verano'] },
-  { id:'blazer-001', name:'Power Blazer', brand:'FitAI Studio', size:'XL', color:'Beige Arena', colorHex:'#D2B48C', type:'blazer', category:'outerwear', price:2190, emoji:'🤍', chest:120, waist:116, length:78, tags:['formal','oversize'] },
-  { id:'crop-001', name:'Vintage Crop', brand:'FitAI Studio', size:'XXL', color:'Verde Oliva', colorHex:'#6B7C3C', type:'camiseta cropped', category:'tops', price:590, emoji:'💚', chest:128, waist:124, length:54, tags:['crop','vintage'] },
+  {id:'h1',name:'Cloud Hoodie',brand:'FitAI Studio',size:'M',color:'Negro Carbón',hex:'#1a1a1a',type:'hoodie',cat:'tops',price:1290,emoji:'🖤'},
+  {id:'t1',name:'Essential Tee',brand:'FitAI Studio',size:'L',color:'Blanco Óptico',hex:'#e5e5e5',type:'camiseta',cat:'tops',price:490,emoji:'🤍'},
+  {id:'j1',name:'Moto Jacket',brand:'FitAI Studio',size:'S',color:'Café Cognac',hex:'#8B4513',type:'chamarra',cat:'outerwear',price:2490,emoji:'🤎'},
+  {id:'d1',name:'Linen Midi Dress',brand:'FitAI Studio',size:'XS',color:'Azul Cielo',hex:'#87CEEB',type:'vestido',cat:'dresses',price:1890,emoji:'💙'},
+  {id:'b1',name:'Power Blazer',brand:'FitAI Studio',size:'XL',color:'Beige Arena',hex:'#D2B48C',type:'blazer',cat:'outerwear',price:2190,emoji:'🤍'},
+  {id:'c1',name:'Vintage Crop',brand:'FitAI Studio',size:'XXL',color:'Verde Oliva',hex:'#6B7C3C',type:'camiseta cropped',cat:'tops',price:590,emoji:'💚'},
 ];
+const CATS  = [{id:'all',lbl:'Todo'},{id:'tops',lbl:'Tops'},{id:'outerwear',lbl:'Exteriores'},{id:'dresses',lbl:'Vestidos'}];
+const SIZES = [{v:'XS',sub:'32-34'},{v:'S',sub:'34-36'},{v:'M',sub:'38-40'},{v:'L',sub:'42-44'},{v:'XL',sub:'46-48'},{v:'XXL',sub:'50-52'}];
+const SORD  = ['XS','S','M','L','XL','XXL'];
+const MSGS  = ['Analizando tu silueta...','Aplicando la prenda con IA...','Ajustando proporciones y talla...','Añadiendo iluminación y detalle...','Finalizando tu look...'];
 
-const SIZES = [
-  {v:'XS',sub:'32-34'},{v:'S',sub:'34-36'},{v:'M',sub:'38-40'},
-  {v:'L',sub:'42-44'},{v:'XL',sub:'46-48'},{v:'XXL',sub:'50-52'},
-];
-
-const SIZE_ORDER = ['XS','S','M','L','XL','XXL'];
-
-const CATS = [{id:'all',label:'Todo'},{id:'tops',label:'Tops'},{id:'outerwear',label:'Exteriores'},{id:'dresses',label:'Vestidos'}];
-
-const GEN_MSGS = [
-  'Analizando tu silueta...',
-  'Aplicando la prenda con IA...',
-  'Ajustando proporciones y talla...',
-  'Añadiendo detalles de iluminación...',
-  'Finalizando tu look...',
-];
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // CREDITS
-// ═══════════════════════════════════════════════════════════════════════════
-const CREDIT_KEY = 'fitaii_credits_v1';
-function getCredits(){ const v=localStorage.getItem(CREDIT_KEY); if(v===null){localStorage.setItem(CREDIT_KEY,'1');return 1;} return parseInt(v,10); }
-function useCredit(){ const c=getCredits(); if(c<=0)return false; localStorage.setItem(CREDIT_KEY,String(c-1)); return true; }
-function hasCredits(){ return getCredits()>0; }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SIZE / FIT HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-function getSizeDiff(gs,ps){ return SIZE_ORDER.indexOf(gs)-SIZE_ORDER.indexOf(ps); }
-
-function getFitLabel(d){
-  if(d===0) return 'Talla perfecta';
-  if(d===1) return 'Ligeramente grande';
-  if(d===2) return 'Grande (holgada)';
-  if(d>=3) return 'Muy grande (oversized)';
-  if(d===-1) return 'Ligeramente ajustada';
-  if(d===-2) return 'Pequeña (apretada)';
-  return 'Muy pequeña';
+// ══════════════════════════════════════════════════════════
+function getCredits(){
+  const v=localStorage.getItem(CREDIT_KEY);
+  if(v===null){localStorage.setItem(CREDIT_KEY,'1');return 1;}
+  return parseInt(v,10)||0;
+}
+function spendCredit(){
+  const c=getCredits(); if(c<=0)return false;
+  localStorage.setItem(CREDIT_KEY,String(c-1)); return true;
+}
+function refundCredit(){
+  const c=getCredits();
+  localStorage.setItem(CREDIT_KEY,String(c+1));
+  S.credits=c+1; refreshCredits();
+}
+function refreshCredits(){
+  S.credits=getCredits();
+  ['cr-photo','cr-catalog','cr-gen'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=S.credits;
+  });
 }
 
-function getFitDesc(d){
+// ══════════════════════════════════════════════════════════
+// SIZE / FIT
+// ══════════════════════════════════════════════════════════
+function sizeDiff(gs,ps){return SORD.indexOf(gs)-SORD.indexOf(ps);}
+function fitLabel(d){
+  if(d===0) return 'Talla perfecta';
+  if(d===1) return 'Ligeramente grande'; if(d===2) return 'Grande (holgada)'; if(d>=3) return 'Muy grande (oversized)';
+  if(d===-1) return 'Ligeramente ajustada'; if(d===-2) return 'Pequeña (apretada)'; return 'Muy pequeña';
+}
+function fitDesc(d){
   if(d===0) return 'te quedará perfectamente a tu medida';
   if(d===1) return 'estará ligeramente holgada, con un look relajado';
   if(d===2) return 'se verá notablemente grande, hombros caídos y mangas largas';
@@ -563,486 +509,438 @@ function getFitDesc(d){
   if(d===-2) return 'estará apretada, con la tela tensionada';
   return 'estará muy pequeña, considerablemente apretada';
 }
-
-function getFitColor(d){ return d===0?'green':Math.abs(d)===1?'yellow':'red'; }
+function fitColor(d){return d===0?'green':Math.abs(d)===1?'yellow':'red';}
 
 function buildPrompt(g,ps){
-  const d=getSizeDiff(g.size,ps);
-  const desc=getFitDesc(d);
+  const d=sizeDiff(g.size,ps), desc=fitDesc(d);
   let mod='';
-  if(d>=2) mod='The garment is clearly oversized: shoulders drooping, sleeves too long, excess fabric bunching, very relaxed silhouette.';
-  else if(d===1) mod='Slightly large: relaxed fit with a bit of extra fabric at the shoulders.';
-  else if(d===-1) mod='Slightly small: fabric pulling slightly at the chest seams.';
+  if(d>=2) mod='The garment is clearly oversized: shoulders drooping, sleeves too long, excess fabric bunching.';
+  else if(d===1) mod='Slightly large: relaxed fit, a bit of extra fabric at the shoulders.';
+  else if(d===-1) mod='Slightly small: fabric pulling at the chest seams.';
   else if(d<=-2) mod='Clearly too small: very tight, fabric stretched across chest and shoulders.';
   return [
     `High-quality fashion photo of a person wearing a ${g.color} ${g.type} called "${g.name}".`,
     `The garment is size ${g.size} but the person wears size ${ps}, so it ${desc}.`,
     mod,
-    'Full body shot, studio lighting, white background, fashion catalog style, photorealistic, 4K quality.',
+    'Full body shot, studio lighting, white or light gray background, fashion catalog style, photorealistic, 4K quality.',
   ].filter(Boolean).join(' ');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// UI HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-function renderStepbar(containerId, current){
-  const STEPS = [{key:'photo',label:'Tu foto'},{key:'catalog',label:'Prenda'},{key:'result',label:'Resultado'}];
-  const VIEW_IDX = {'photo':0,'catalog':1,'generating':1.5,'result':2};
-  const cur = VIEW_IDX[current]??0;
-  const el = document.getElementById(containerId);
-  if(!el) return;
-  el.innerHTML = STEPS.map((s,i)=>{
-    const si = i;
-    const done = cur > si;
-    const active = cur >= si && cur < si+1;
-    return `
-      <div class="step-dot ${done?'done':active?'active':''}">${done?'✓':i+1}</div>
-      <span class="step-label ${done?'done':active?'active':''}" style="display:${window.innerWidth<400?'none':'inline'}">${s.label}</span>
-      ${i<STEPS.length-1?`<div class="step-line ${done?'done':''}"></div>`:''}
-    `;
+// ══════════════════════════════════════════════════════════
+// FIT BADGE RENDERER
+// ══════════════════════════════════════════════════════════
+function renderFitBadge(id,g,ps,compact){
+  const el=document.getElementById(id); if(!el) return;
+  if(!g||!ps){el.innerHTML='';return;}
+  const d=sizeDiff(g.size,ps), col=fitColor(d), lbl=fitLabel(d), desc=fitDesc(d);
+  const pct=Math.max(5,Math.min(95,50+d*(-14)));
+  const c={green:{bg:'rgba(5,46,22,.5)',border:'rgba(20,83,45,.5)',dot:'#4ade80',txt:'#4ade80'},
+            yellow:{bg:'rgba(66,32,6,.5)',border:'rgba(113,63,18,.5)',dot:'#fbbf24',txt:'#fbbf24'},
+            red:{bg:'rgba(69,10,10,.5)',border:'rgba(127,29,29,.5)',dot:'#f87171',txt:'#f87171'}}[col];
+  if(compact){
+    el.innerHTML=`<div style="display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .85rem;border-radius:99px;background:${c.bg};border:1px solid ${c.border}">
+      <div style="width:.4rem;height:.4rem;border-radius:50%;background:${c.dot}"></div>
+      <span style="font-size:.75rem;font-weight:700;color:${c.txt}">${lbl}</span></div>`;
+    return;
+  }
+  el.innerHTML=`<div class="fitbadge ${col}">
+    <div class="fbtop">
+      <div class="fbleft"><div class="fbdot ${col}"></div><span class="fbname ${col}">${lbl}</span></div>
+      <div class="fbsizes"><span>Prenda ${g.size}</span><span>→</span><span>Tú ${ps}</span></div>
+    </div>
+    <div class="fbbar-wrap">
+      <div class="fbbar-track">
+        <div class="fbbar-l"></div><div class="fbbar-r"></div><div class="fbbar-div"></div>
+        <div class="fbbar-thumb ${col}" style="left:${pct}%"></div>
+      </div>
+      <div class="fbbar-lbls"><span>Muy grande</span><span>Perfecto</span><span>Muy chica</span></div>
+    </div>
+    <p class="fbdesc">Esta prenda <span class="${col}">${desc}</span></p>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// ERROR / TOAST
+// ══════════════════════════════════════════════════════════
+function showErr(screen,msg){
+  const el=document.getElementById('err-'+screen); if(!el) return;
+  if(!msg){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='block';
+  el.innerHTML=`<div class="errbar">
+    <span class="erricon">⚠</span>
+    <div><p class="errtitle">Ocurrió un error</p><p class="errmsg">${msg}</p></div>
+    <button class="errclose" onclick="showErr('${screen}','')">✕</button>
+  </div>`;
+}
+
+let toastTimer=null;
+function toast(msg){
+  const el=document.getElementById('toast'); if(!el) return;
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ══════════════════════════════════════════════════════════
+// STEPBAR
+// ══════════════════════════════════════════════════════════
+function renderStepbar(id,view){
+  const el=document.getElementById(id); if(!el) return;
+  const STEPS=[{k:'photo',l:'Tu foto'},{k:'catalog',l:'Prenda'},{k:'result',l:'Resultado'}];
+  const VIDX={photo:0,catalog:1,generating:1.5,result:2};
+  const cur=VIDX[view]??0;
+  el.innerHTML=STEPS.map((s,i)=>{
+    const done=cur>i, active=cur>=i&&cur<i+1;
+    const show=window.innerWidth>=380;
+    return `<div class="sdot ${done?'done':active?'active':''}">${done?'✓':i+1}</div>
+      ${show?`<span class="slbl ${done?'done':active?'active':''}">${s.l}</span>`:''}
+      ${i<2?`<div class="sline ${done?'done':''}"></div>`:''}`;
   }).join('');
 }
 
-function renderCreditBadges(){
-  const c = state.credits;
-  ['credit-photo','credit-catalog','credit-gen'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.textContent=c;
-  });
+function refreshUI(view){
+  refreshCredits();
+  ['sb-photo','sb-catalog','sb-gen'].forEach(id=>renderStepbar(id,view));
 }
 
-function renderFitBadge(containerId, garment, personSize, compact){
-  const el=document.getElementById(containerId); if(!el||!garment||!personSize){if(el)el.innerHTML='';return;}
-  const d=getSizeDiff(garment.size,personSize);
-  const color=getFitColor(d);
-  const label=getFitLabel(d);
-  const desc=getFitDesc(d);
-  const pct=Math.max(5,Math.min(95,50+d*(-14)));
-
-  if(compact){
-    el.innerHTML=`<div style="display:flex;align-items:center;gap:.4rem;padding:.3rem .85rem;border-radius:99px;border:1px solid;display:inline-flex;
-      background:${color==='green'?'rgba(5,46,22,.5)':color==='yellow'?'rgba(66,32,6,.5)':'rgba(69,10,10,.5)'};
-      border-color:${color==='green'?'rgba(20,83,45,.5)':color==='yellow'?'rgba(113,63,18,.5)':'rgba(127,29,29,.5)'}">
-      <div style="width:.4rem;height:.4rem;border-radius:50%;background:${color==='green'?'#4ade80':color==='yellow'?'#fbbf24':'#f87171'}"></div>
-      <span style="font-size:.75rem;font-weight:700;color:${color==='green'?'#4ade80':color==='yellow'?'#fbbf24':'#f87171'}">${label}</span>
-    </div>`;
-    return;
-  }
-
-  el.innerHTML=`<div class="fit-badge ${color}">
-    <div class="fit-badge-top">
-      <div class="fit-badge-left">
-        <div class="fit-dot ${color}"></div>
-        <span class="fit-name ${color}">${label}</span>
-      </div>
-      <div class="fit-sizes">
-        <span>Prenda ${garment.size}</span>
-        <span>→</span>
-        <span>Tú ${personSize}</span>
-      </div>
-    </div>
-    <div class="fit-bar-wrap">
-      <div class="fit-bar-track">
-        <div class="fit-bar-left"></div>
-        <div class="fit-bar-right"></div>
-        <div class="fit-bar-divider"></div>
-        <div class="fit-bar-thumb ${color}" style="left:${pct}%"></div>
-      </div>
-      <div class="fit-bar-labels">
-        <span>Muy grande</span><span>Perfecto</span><span>Muy chica</span>
-      </div>
-    </div>
-    <p class="fit-desc">Esta prenda <span class="${color}">${desc}</span></p>
-  </div>`;
-}
-
-function showError(screen, msg){
-  state.error = msg;
-  const el = document.getElementById('error-'+screen);
-  if(!el) return;
-  if(!msg){ el.style.display='none'; el.innerHTML=''; return; }
-  el.style.display='block';
-  el.innerHTML=`<div class="error-bar">
-    <span class="error-icon">⚠</span>
-    <div><p class="error-title">Ocurrió un error</p><p class="error-msg">${msg}</p></div>
-    <button class="error-close" onclick="clearError('${screen}')">✕</button>
-  </div>`;
-}
-function clearError(screen){ showError(screen,''); }
-
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // NAVIGATION
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function goTo(view){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  const el = document.getElementById('s-'+view);
-  if(el){ el.classList.add('active'); el.classList.add('fade-in'); setTimeout(()=>el.classList.remove('fade-in'),400); }
-  state.view = view;
-  renderCreditBadges();
-  renderStepbar('stepbar-photo', view);
-  renderStepbar('stepbar-catalog', view);
-  renderStepbar('stepbar-gen', view);
+  const el=document.getElementById('s-'+view);
+  if(el){el.classList.add('active');requestAnimationFrame(()=>el.classList.add('fadein'));
+    setTimeout(()=>el.classList.remove('fadein'),400);}
+  S.view=view;
+  refreshUI(view);
   if(view==='catalog') renderCatalog();
   if(view==='generating') startGenFlow();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+function safeGoTo(view){
+  stopStream();
+  goTo(view);
+}
+
+// ══════════════════════════════════════════════════════════
 // CAMERA
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+function stopStream(){
+  if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null;}
+}
+
 async function startCamera(facingMode){
-  facingMode = facingMode || state.facing || 'user';
-  state.facing = facingMode;
-  try {
-    if(state.stream) state.stream.getTracks().forEach(t=>t.stop());
-    const s = await navigator.mediaDevices.getUserMedia({
-      video:{facingMode,width:{ideal:1080},height:{ideal:1440}},audio:false
-    });
-    state.stream = s;
-    const video = document.getElementById('video');
-    video.srcObject = s;
-    video.style.transform = facingMode==='user' ? 'scaleX(-1)' : 'none';
+  facingMode=facingMode||S.facing||'user';
+  S.facing=facingMode;
+  stopStream();
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode,width:{ideal:1080},height:{ideal:1440}},audio:false});
+    S.stream=s;
+    const v=document.getElementById('video');
+    v.srcObject=s;
+    v.style.transform=facingMode==='user'?'scaleX(-1)':'none';
     document.getElementById('cam-idle').style.display='none';
     document.getElementById('cam-live').style.display='block';
     document.getElementById('cam-preview').style.display='none';
-  } catch(e) {
-    showError('photo','No se pudo acceder a la cámara. Verifica los permisos del navegador.');
+    showErr('photo','');
+  }catch(e){
+    showErr('photo','No se pudo acceder a la cámara. Verifica los permisos en tu navegador.');
   }
 }
 
 function flipCamera(){
-  const next = state.facing==='user' ? 'environment' : 'user';
+  const next=S.facing==='user'?'environment':'user';
   startCamera(next);
 }
 
 function capturePhoto(){
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  if(state.facing==='user'){ ctx.translate(canvas.width,0); ctx.scale(-1,1); }
+  const video=document.getElementById('video');
+  const canvas=document.getElementById('canvas');
+  if(!video.videoWidth){showErr('photo','La cámara no está lista, espera un momento.');return;}
+  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  const ctx=canvas.getContext('2d');
+  if(S.facing==='user'){ctx.translate(canvas.width,0);ctx.scale(-1,1);}
   ctx.drawImage(video,0,0);
-  const dataUrl = canvas.toDataURL('image/jpeg',0.9);
-  state.photoBase64 = dataUrl.split(',')[1];
-  state.photoPreview = dataUrl;
-  if(state.stream) state.stream.getTracks().forEach(t=>t.stop());
-  state.stream=null;
+  const dataUrl=canvas.toDataURL('image/jpeg',0.9);
+  S.photoBase64=dataUrl.split(',')[1];
+  S.photoPreview=dataUrl;
+  stopStream();
   document.getElementById('cam-live').style.display='none';
   document.getElementById('cam-preview').style.display='block';
-  document.getElementById('preview-img').src = dataUrl;
+  document.getElementById('preview-img').src=dataUrl;
 }
 
 function retakePhoto(){
-  state.photoBase64=null; state.photoPreview=null;
+  S.photoBase64=null; S.photoPreview=null;
   document.getElementById('cam-preview').style.display='none';
   document.getElementById('cam-idle').style.display='flex';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // CATALOG
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 function renderCatalog(){
-  renderSizeGrid();
-  renderCatTabs();
-  renderGarments();
-  renderFitBadge('fit-badge-wrap', state.selectedGarment, state.personSize, false);
-  updateGenBtn();
+  renderSizes(); renderCatTabs(); renderGarments();
+  renderFitBadge('fit-badge-wrap',S.garment,S.size,false);
+  updateBtn();
 }
 
-function renderSizeGrid(){
+function renderSizes(){
   const el=document.getElementById('size-grid'); if(!el) return;
   el.innerHTML=SIZES.map(s=>`
-    <button class="size-btn ${state.personSize===s.v?'sel':''}" onclick="selectSize('${s.v}')">
-      <span class="size-btn-label">${s.v}</span>
-      <span class="size-btn-sub">${s.sub}</span>
+    <button class="sbtn ${S.size===s.v?'sel':''}" onclick="selectSize('${s.v}')">
+      <span class="sbtn-lbl">${s.v}</span><span class="sbtn-sub">${s.sub}</span>
     </button>`).join('');
 }
 
-function selectSize(v){
-  state.personSize=v;
-  renderSizeGrid();
-  renderFitBadge('fit-badge-wrap', state.selectedGarment, state.personSize, false);
-  updateGenBtn();
-}
+function selectSize(v){S.size=v;renderSizes();renderFitBadge('fit-badge-wrap',S.garment,S.size,false);updateBtn();}
 
 function renderCatTabs(){
   const el=document.getElementById('cat-tabs'); if(!el) return;
   el.innerHTML=CATS.map(c=>`
-    <button class="cat-tab ${state.activeCat===c.id?'active':''}" onclick="selectCat('${c.id}')">${c.label}</button>
-  `).join('');
+    <button class="cattab ${S.activeCat===c.id?'active':''}" onclick="selectCat('${c.id}')">${c.lbl}</button>`).join('');
 }
 
-function selectCat(id){ state.activeCat=id; renderCatTabs(); renderGarments(); }
+function selectCat(id){S.activeCat=id;renderCatTabs();renderGarments();}
 
 function renderGarments(){
   const el=document.getElementById('garments-grid'); if(!el) return;
-  const items = state.activeCat==='all' ? CATALOG : CATALOG.filter(g=>g.category===state.activeCat);
+  const items=S.activeCat==='all'?CATALOG:CATALOG.filter(g=>g.cat===S.activeCat);
   el.innerHTML=items.map(g=>`
-    <button class="garment-card ${state.selectedGarment?.id===g.id?'sel':''}" onclick="selectGarment('${g.id}')">
-      <div class="garment-thumb" style="background:${g.colorHex}18">
-        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,${g.colorHex}44 0%,transparent 70%)"></div>
-        <span class="garment-thumb-emoji">${g.emoji}</span>
-        ${state.selectedGarment?.id===g.id?'<div class="garment-check">✓</div>':''}
+    <button class="gcard ${S.garment?.id===g.id?'sel':''}" onclick="selectGarment('${g.id}')">
+      <div class="gthumb" style="background:${g.hex}18">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,${g.hex}44 0%,transparent 70%)"></div>
+        <span class="gemoji">${g.emoji}</span>
+        ${S.garment?.id===g.id?'<div class="gcheck">✓</div>':''}
       </div>
-      <div class="garment-info">
-        <p class="garment-name">${g.name}</p>
-        <p class="garment-color">${g.color}</p>
-        <div class="garment-meta">
-          <span class="garment-size-tag">Talla ${g.size}</span>
-          <span class="garment-price">$${g.price.toLocaleString('es-MX')}</span>
+      <div class="ginfo">
+        <p class="gname">${g.name}</p>
+        <p class="gcolor">${g.color}</p>
+        <div class="gmeta">
+          <span class="gsizetag">Talla ${g.size}</span>
+          <span class="gprice">$${g.price.toLocaleString('es-MX')}</span>
         </div>
       </div>
     </button>`).join('');
 }
 
 function selectGarment(id){
-  state.selectedGarment = CATALOG.find(g=>g.id===id)||null;
+  S.garment=CATALOG.find(g=>g.id===id)||null;
   renderGarments();
-  renderFitBadge('fit-badge-wrap', state.selectedGarment, state.personSize, false);
-  updateGenBtn();
+  renderFitBadge('fit-badge-wrap',S.garment,S.size,false);
+  updateBtn();
 }
 
-function updateGenBtn(){
+function updateBtn(){
   const btn=document.getElementById('gen-btn'); if(!btn) return;
-  const ready = state.selectedGarment && state.personSize && hasCredits();
-  btn.disabled = !ready;
-
-  // Show checklist of what's still needed
+  const hintEl=document.getElementById('gen-hint');
+  const hasPhoto=!!S.photoBase64;
+  const ready=hasPhoto&&S.garment&&S.size&&getCredits()>0;
+  btn.disabled=!ready;
   let hint='';
-  if(!state.personSize && !state.selectedGarment){
-    hint='Selecciona tu talla y una prenda para continuar';
-  } else if(!state.personSize){
-    hint='Falta: selecciona tu talla ↑';
-  } else if(!state.selectedGarment){
-    hint='Falta: elige una prenda del catálogo ↑';
-  } else if(!hasCredits()){
-    hint='Sin créditos disponibles';
-  }
-
-  let hintEl = document.getElementById('gen-hint');
-  if(!hintEl){
-    hintEl = document.createElement('p');
-    hintEl.id='gen-hint';
-    hintEl.style.cssText='text-align:center;font-size:.75rem;color:#6b7280;margin-top:.5rem';
-    btn.parentNode.appendChild(hintEl);
-  }
-  hintEl.textContent = hint;
+  if(!hasPhoto) hint='Vuelve atrás y toma una foto primero';
+  else if(!S.size&&!S.garment) hint='Selecciona tu talla y una prenda para continuar';
+  else if(!S.size) hint='Falta: selecciona tu talla ↑';
+  else if(!S.garment) hint='Falta: elige una prenda del catálogo ↑';
+  else if(getCredits()<=0) hint='Sin créditos disponibles';
+  if(hintEl) hintEl.textContent=hint;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // GENERATE
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 async function handleGenerate(){
-  if(!state.photoBase64||!state.selectedGarment||!state.personSize) return;
-  if(!hasCredits()){ showError('catalog','Ya usaste tu crédito gratuito.'); return; }
-  useCredit();
-  state.credits = getCredits();
+  if(!S.photoBase64||!S.garment||!S.size){updateBtn();return;}
+  if(getCredits()<=0){showErr('catalog','Ya usaste tu crédito gratuito.');return;}
+  spendCredit();
+  S.credits=getCredits();
+  showErr('catalog','');
   goTo('generating');
 }
 
 function startGenFlow(){
-  clearInterval(state.genMsgInterval);
-  state.genMsgIdx=0;
-  updateGenMsg();
-  state.genMsgInterval = setInterval(()=>{
-    state.genMsgIdx=(state.genMsgIdx+1)%GEN_MSGS.length;
-    updateGenMsg();
-  },3500);
-
+  clearInterval(S.msgTimer);
+  S.msgIdx=0; S.polling=false;
+  setMsg(MSGS[0]);
+  S.msgTimer=setInterval(()=>{S.msgIdx=(S.msgIdx+1)%MSGS.length;setMsg(MSGS[S.msgIdx]);},3500);
   const sn=document.getElementById('gen-size-note');
-  if(sn && state.selectedGarment && state.personSize){
-    const d=getSizeDiff(state.selectedGarment.size,state.personSize);
-    sn.textContent = d===0?'' : `Ajustando talla ${state.selectedGarment.size} para alguien de talla ${state.personSize}`;
+  if(sn&&S.garment&&S.size){
+    const d=sizeDiff(S.garment.size,S.size);
+    sn.textContent=d===0?'':`Ajustando talla ${S.garment.size} para alguien de talla ${S.size}`;
   }
-
-  callGenerateAPI();
+  callAPI();
 }
 
-function updateGenMsg(){
-  const el=document.getElementById('gen-msg'); if(el) el.textContent=GEN_MSGS[state.genMsgIdx];
-  for(let i=0;i<5;i++){
-    const d=document.getElementById('gd'+i);
-    if(d) d.className='gen-dot'+(state.genMsgIdx>=i?' on':'');
-  }
+function setMsg(msg){
+  const el=document.getElementById('gen-msg'); if(el) el.textContent=msg;
+  for(let i=0;i<5;i++){const d=document.getElementById('gd'+i);if(d) d.className='gendot'+(S.msgIdx>=i?' on':'');}
 }
 
-async function callGenerateAPI(){
-  const prompt = buildPrompt(state.selectedGarment, state.personSize);
-  const ATLAS_KEY = 'apikey-b27686b0396547b8986c7783809a7791';
-  const ATLAS_URL = 'https://api.atlascloud.ai/api/v1/model';
-
-  try {
-    // Step 1: upload photo to get a public URL (Atlas edit endpoint requires URLs, not base64)
-    updateGenMsgOverride('Subiendo tu foto de forma segura...');
-    const photoUrl = await uploadPhoto(state.photoBase64);
-
-    // Step 2: call Atlas Cloud edit model
-    updateGenMsgOverride('Enviando a la IA...');
-    const res = await fetch(`${ATLAS_URL}/generateImage`, {
+async function callAPI(){
+  const prompt=buildPrompt(S.garment,S.size);
+  try{
+    setMsg('Subiendo tu foto de forma segura...');
+    const photoUrl=await uploadPhoto(S.photoBase64);
+    setMsg('Enviando a la IA...');
+    const res=await fetch(`${ATLAS_URL}/generateImage`,{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${ATLAS_KEY}`,
-      },
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${ATLAS_KEY}`},
       body:JSON.stringify({
         model:'google/nano-banana-2/edit',
         prompt,
-        images: [photoUrl],
-        enable_sync_mode: false,
-        enable_base64_output: false,
+        images:[photoUrl],
+        enable_sync_mode:false,
+        enable_base64_output:false,
       }),
     });
-
     if(!res.ok){
-      const txt = await res.text();
+      const txt=await res.text();
       throw new Error(`Atlas API ${res.status}: ${txt.slice(0,300)}`);
     }
-
-    const data = await res.json();
-
-    // Sync: image returned immediately
-    const syncUrl = data.images?.[0] ?? data.image ?? data.output?.[0];
-    if(syncUrl){ finishResult(syncUrl); return; }
-
-    // Async: poll for result
-    const predId = data.id ?? data.prediction_id;
-    if(predId){ await pollResult(predId); return; }
-
-    throw new Error('Respuesta inesperada: ' + JSON.stringify(data).slice(0,200));
-
-  } catch(e){
-    clearInterval(state.genMsgInterval);
-    refundCredit();
-    goTo('catalog');
-    showError('catalog', e.message || 'Error desconocido al generar la imagen');
+    const data=await res.json();
+    const syncUrl=data.images?.[0]??data.image??data.output?.[0];
+    if(syncUrl){done(syncUrl);return;}
+    const predId=data.id??data.prediction_id;
+    if(predId){await pollAPI(predId);return;}
+    throw new Error('Respuesta inesperada: '+JSON.stringify(data).slice(0,200));
+  }catch(e){
+    genFailed(e.message||'Error desconocido al generar la imagen');
   }
 }
 
-// Upload photo to imgbb (free, no account needed with API key)
-// Falls back to a data-URL approach if imgbb fails
 async function uploadPhoto(base64){
-  const IMGBB_KEY = '2e46b80cda78a8b33a47eea45b0de74a'; // free public key
-  const form = new FormData();
-  form.append('key', IMGBB_KEY);
-  form.append('image', base64);
-  form.append('expiration', '600'); // auto-delete after 10 min
-
-  const res = await fetch('https://api.imgbb.com/1/upload', { method:'POST', body:form });
-  if(!res.ok) throw new Error('No se pudo subir la foto. Verifica tu conexión.');
-  const data = await res.json();
-  if(!data.success) throw new Error('Error al subir foto: ' + (data.error?.message || 'desconocido'));
+  const form=new FormData();
+  form.append('key',IMGBB_KEY);
+  form.append('image',base64);
+  form.append('expiration','600');
+  const res=await fetch('https://api.imgbb.com/1/upload',{method:'POST',body:form});
+  if(!res.ok) throw new Error('No se pudo subir la foto (imgbb '+res.status+'). Verifica tu conexión.');
+  const data=await res.json();
+  if(!data.success) throw new Error('Error al subir foto: '+(data.error?.message||'desconocido'));
   return data.data.url;
 }
 
-function updateGenMsgOverride(msg){
-  const el=document.getElementById('gen-msg');
-  if(el) el.textContent=msg;
-}
-
-function refundCredit(){
-  const cur = parseInt(localStorage.getItem('fitaii_credits_v1')||'0',10);
-  localStorage.setItem('fitaii_credits_v1', String(cur+1));
-  state.credits = cur+1;
-  renderCreditBadges();
-}
-
-async function pollResult(predictionId){
-  const ATLAS_KEY = 'apikey-b27686b0396547b8986c7783809a7791';
-  const ATLAS_URL = 'https://api.atlascloud.ai/api/v1/model';
-  state.pollActive=true;
-  let attempts=0;
-  while(state.pollActive && attempts<40){
-    await sleep(3000);
-    attempts++;
-    try {
-      const res=await fetch(`${ATLAS_URL}/prediction/${predictionId}`,{
-        headers:{'Authorization':`Bearer ${ATLAS_KEY}`},
-      });
+async function pollAPI(predId){
+  S.polling=true; let attempts=0;
+  while(S.polling&&attempts<40){
+    await sleep(3000); attempts++;
+    try{
+      const res=await fetch(`${ATLAS_URL}/prediction/${predId}`,{
+        headers:{'Authorization':`Bearer ${ATLAS_KEY}`}});
       const data=await res.json();
-      const status = data.status;
-      if(status==='succeeded'||status==='completed'){
-        const url = data.output?.[0] ?? data.images?.[0] ?? data.image;
-        finishResult(url); return;
+      if(data.status==='succeeded'||data.status==='completed'){
+        const url=data.output?.[0]??data.images?.[0]??data.image;
+        done(url); return;
       }
-      if(status==='failed') throw new Error(data.error||'Generación fallida');
-    } catch(e){
-      clearInterval(state.genMsgInterval);
-      refundCredit();
-      goTo('catalog');
-      showError('catalog', e.message||'Error al obtener resultado');
-      return;
+      if(data.status==='failed') throw new Error(data.error||'Generación fallida en el servidor');
+    }catch(e){
+      genFailed(e.message||'Error al obtener resultado'); return;
     }
   }
-  if(state.pollActive){
-    clearInterval(state.genMsgInterval);
-    refundCredit();
-    goTo('catalog');
-    showError('catalog','Tiempo de espera agotado. Inténtalo de nuevo.');
-  }
+  if(S.polling) genFailed('Tiempo de espera agotado. Inténtalo de nuevo.');
 }
 
-function finishResult(imageUrl){
-  clearInterval(state.genMsgInterval);
-  state.pollActive=false;
-  state.resultImage=imageUrl;
+function done(imageUrl){
+  clearInterval(S.msgTimer); S.polling=false;
+  S.resultImage=imageUrl;
   renderResult();
   goTo('result');
 }
 
+function genFailed(msg){
+  clearInterval(S.msgTimer); S.polling=false;
+  refundCredit();
+  goTo('catalog');
+  showErr('catalog',msg);
+}
+
+// ══════════════════════════════════════════════════════════
+// RESULT
+// ══════════════════════════════════════════════════════════
 function renderResult(){
-  const g=state.selectedGarment; const ps=state.personSize;
-  document.getElementById('result-original').src=state.photoPreview||'';
-  document.getElementById('result-ai').src=state.resultImage||'';
-  document.getElementById('result-download').href=state.resultImage||'#';
-  renderFitBadge('result-fit-badge', g, ps, true);
-  renderFitBadge('result-fit-badge-full', g, ps, false);
-  const card=document.getElementById('result-garment-card');
-  if(g&&card){
-    card.innerHTML=`
-      <div class="garment-info-icon" style="background:${g.colorHex}22">${g.emoji}</div>
-      <div>
-        <p class="garment-info-name">${g.name}</p>
-        <p class="garment-info-brand">${g.brand} · Talla ${g.size} · ${g.color}</p>
-        <p class="garment-info-price">$${g.price.toLocaleString('es-MX')} MXN</p>
-      </div>`;
+  const g=S.garment, ps=S.size;
+  document.getElementById('r-original').src=S.photoPreview||'';
+  document.getElementById('r-ai').src=S.resultImage||'';
+  renderFitBadge('r-fit-compact',g,ps,true);
+  renderFitBadge('r-fit-full',g,ps,false);
+  const card=document.getElementById('r-garment');
+  if(g&&card) card.innerHTML=`
+    <div class="giicon" style="background:${g.hex}22">${g.emoji}</div>
+    <div>
+      <p class="giname">${g.name}</p>
+      <p class="gibrand">${g.brand} · Talla ${g.size} · ${g.color}</p>
+      <p class="giprice">$${g.price.toLocaleString('es-MX')} MXN</p>
+    </div>`;
+}
+
+async function downloadResult(){
+  if(!S.resultImage) return;
+  const btn=document.getElementById('r-download-btn');
+  if(btn){btn.textContent='⏳ Descargando...';btn.disabled=true;}
+  try{
+    const res=await fetch(S.resultImage);
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='fitai-look.jpg';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('✓ Imagen descargada');
+  }catch{
+    // Fallback: open in new tab
+    window.open(S.resultImage,'_blank');
+    toast('Imagen abierta en nueva pestaña');
+  }finally{
+    if(btn){btn.textContent='⬇️ Descargar';btn.disabled=false;}
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SHARE / RESET
-// ═══════════════════════════════════════════════════════════════════════════
 async function shareResult(){
-  const g=state.selectedGarment;
   if(navigator.share){
-    try{ await navigator.share({title:'Mi look en FitAI',text:`¡Mira cómo me quedaría el ${g?.name}! Probé esta prenda con IA en FitAI`,url:location.href}); }catch(e){}
-  } else {
-    await navigator.clipboard.writeText(location.href).catch(()=>{});
-    alert('¡Enlace copiado!');
+    try{
+      await navigator.share({
+        title:'Mi look en FitAI',
+        text:`¡Mira cómo me quedaría el ${S.garment?.name}! Lo probé con IA en FitAI 🔥`,
+        url:location.href,
+      });
+    }catch(e){ if(e.name!=='AbortError') toast('No se pudo compartir'); }
+  }else{
+    try{
+      await navigator.clipboard.writeText(location.href);
+      toast('✓ Enlace copiado al portapapeles');
+    }catch{
+      toast('Copia este enlace: '+location.href.slice(0,40)+'...');
+    }
   }
 }
 
+// ══════════════════════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════════════════════
 function startOver(){
-  state.pollActive=false;
-  clearInterval(state.genMsgInterval);
-  if(state.stream){ state.stream.getTracks().forEach(t=>t.stop()); state.stream=null; }
-  state.photoBase64=null; state.photoPreview=null;
-  state.selectedGarment=null; state.personSize=null;
-  state.resultImage=null; state.error=null;
-  state.credits=getCredits();
+  clearInterval(S.msgTimer); S.polling=false; stopStream();
+  S.photoBase64=null; S.photoPreview=null;
+  S.garment=null; S.size=null; S.resultImage=null; S.activeCat='all';
   document.getElementById('cam-idle').style.display='flex';
   document.getElementById('cam-live').style.display='none';
   document.getElementById('cam-preview').style.display='none';
-  clearError('photo'); clearError('catalog');
+  showErr('photo',''); showErr('catalog','');
   goTo('photo');
 }
 
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════════════════════════
-(function init(){
-  state.credits = getCredits();
-  renderCreditBadges();
+// ══════════════════════════════════════════════════════════
+(function(){
+  S.credits=getCredits();
+  refreshUI('landing');
 })();
 </script>
 </body>
