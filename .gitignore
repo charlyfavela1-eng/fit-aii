@@ -3,4 +3,11 @@ node_modules/
 .env.local
 .env*.local
 *.log
+
+# Mac
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+__MACOSX
