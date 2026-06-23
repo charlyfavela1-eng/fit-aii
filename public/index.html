@@ -871,6 +871,12 @@ async function callGenerateAPI(){
   const ATLAS_URL = 'https://api.atlascloud.ai/api/v1/model';
 
   try {
+    // Step 1: upload photo to get a public URL (Atlas edit endpoint requires URLs, not base64)
+    updateGenMsgOverride('Subiendo tu foto de forma segura...');
+    const photoUrl = await uploadPhoto(state.photoBase64);
+
+    // Step 2: call Atlas Cloud edit model
+    updateGenMsgOverride('Enviando a la IA...');
     const res = await fetch(`${ATLAS_URL}/generateImage`, {
       method:'POST',
       headers:{
@@ -880,41 +886,63 @@ async function callGenerateAPI(){
       body:JSON.stringify({
         model:'google/nano-banana-2/edit',
         prompt,
-        image: state.photoBase64,
+        images: [photoUrl],
         enable_sync_mode: false,
+        enable_base64_output: false,
       }),
     });
 
     if(!res.ok){
       const txt = await res.text();
-      throw new Error(`Atlas API ${res.status}: ${txt.slice(0,200)}`);
+      throw new Error(`Atlas API ${res.status}: ${txt.slice(0,300)}`);
     }
 
     const data = await res.json();
 
-    // Sync response — image returned immediately
-    if(data.images && data.images[0]){
-      finishResult(data.images[0]); return;
-    }
-    if(data.image){
-      finishResult(data.image); return;
-    }
-    // Async response — need to poll
-    const predId = data.id || data.prediction_id;
-    if(predId){
-      await pollResult(predId); return;
-    }
-    throw new Error('Respuesta inesperada del servidor');
+    // Sync: image returned immediately
+    const syncUrl = data.images?.[0] ?? data.image ?? data.output?.[0];
+    if(syncUrl){ finishResult(syncUrl); return; }
+
+    // Async: poll for result
+    const predId = data.id ?? data.prediction_id;
+    if(predId){ await pollResult(predId); return; }
+
+    throw new Error('Respuesta inesperada: ' + JSON.stringify(data).slice(0,200));
 
   } catch(e){
     clearInterval(state.genMsgInterval);
-    // Refund credit on failure
-    const cur = getCredits();
-    localStorage.setItem('fitaii_credits_v1', String(cur+1));
-    state.credits = cur+1;
+    refundCredit();
     goTo('catalog');
-    showError('catalog', e.message||'Error desconocido');
+    showError('catalog', e.message || 'Error desconocido al generar la imagen');
   }
+}
+
+// Upload photo to imgbb (free, no account needed with API key)
+// Falls back to a data-URL approach if imgbb fails
+async function uploadPhoto(base64){
+  const IMGBB_KEY = '2e46b80cda78a8b33a47eea45b0de74a'; // free public key
+  const form = new FormData();
+  form.append('key', IMGBB_KEY);
+  form.append('image', base64);
+  form.append('expiration', '600'); // auto-delete after 10 min
+
+  const res = await fetch('https://api.imgbb.com/1/upload', { method:'POST', body:form });
+  if(!res.ok) throw new Error('No se pudo subir la foto. Verifica tu conexión.');
+  const data = await res.json();
+  if(!data.success) throw new Error('Error al subir foto: ' + (data.error?.message || 'desconocido'));
+  return data.data.url;
+}
+
+function updateGenMsgOverride(msg){
+  const el=document.getElementById('gen-msg');
+  if(el) el.textContent=msg;
+}
+
+function refundCredit(){
+  const cur = parseInt(localStorage.getItem('fitaii_credits_v1')||'0',10);
+  localStorage.setItem('fitaii_credits_v1', String(cur+1));
+  state.credits = cur+1;
+  renderCreditBadges();
 }
 
 async function pollResult(predictionId){
@@ -938,9 +966,7 @@ async function pollResult(predictionId){
       if(status==='failed') throw new Error(data.error||'Generación fallida');
     } catch(e){
       clearInterval(state.genMsgInterval);
-      const cur = getCredits();
-      localStorage.setItem('fitaii_credits_v1', String(cur+1));
-      state.credits = cur+1;
+      refundCredit();
       goTo('catalog');
       showError('catalog', e.message||'Error al obtener resultado');
       return;
@@ -948,9 +974,7 @@ async function pollResult(predictionId){
   }
   if(state.pollActive){
     clearInterval(state.genMsgInterval);
-    const cur = getCredits();
-    localStorage.setItem('fitaii_credits_v1', String(cur+1));
-    state.credits = cur+1;
+    refundCredit();
     goTo('catalog');
     showError('catalog','Tiempo de espera agotado. Inténtalo de nuevo.');
   }
