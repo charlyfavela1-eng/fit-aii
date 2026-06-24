@@ -663,7 +663,13 @@ function capturePhoto(){
   const ctx=canvas.getContext('2d');
   if(S.facing==='user'){ctx.translate(canvas.width,0);ctx.scale(-1,1);}
   ctx.drawImage(video,0,0);
-  const dataUrl=canvas.toDataURL('image/jpeg',0.9);
+  // resize to max 1024px to stay under imgbb limits
+  const MAX=1024;
+  let w=canvas.width, h=canvas.height;
+  if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+  const out=document.createElement('canvas'); out.width=w; out.height=h;
+  out.getContext('2d').drawImage(canvas,0,0,w,h);
+  const dataUrl=out.toDataURL('image/jpeg',0.85);
   S.photoBase64=dataUrl.split(',')[1];
   S.photoPreview=dataUrl;
   stopStream();
@@ -816,9 +822,8 @@ async function uploadPhoto(base64){
   form.append('image',base64);
   form.append('expiration','600');
   const res=await fetch('https://api.imgbb.com/1/upload',{method:'POST',body:form});
-  if(!res.ok) throw new Error('No se pudo subir la foto (imgbb '+res.status+'). Verifica tu conexión.');
-  const data=await res.json();
-  if(!data.success) throw new Error('Error al subir foto: '+(data.error?.message||'desconocido'));
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok||!data.success) throw new Error('imgbb '+(res.status)+': '+(data?.error?.message||data?.status_txt||'error desconocido'));
   return data.data.url;
 }
 
