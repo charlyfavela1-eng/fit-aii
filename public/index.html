@@ -438,7 +438,8 @@ video{width:100%;height:100%;object-fit:cover}
 const ATLAS_KEY  = 'apikey-b27686b0396547b8986c7783809a7791';
 const ATLAS_URL  = 'https://api.atlascloud.ai/api/v1/model';
 const IMGBB_KEY  = '2e46b80cda78a8b33a47eea45b0de74a';
-const CREDIT_KEY = 'fitaii_credits_v1';
+const CREDIT_KEY = 'fitaii_credits_v2';
+const FREE_CREDITS = 3;
 
 // ══════════════════════════════════════════════════════════
 // STATE
@@ -472,7 +473,7 @@ const MSGS  = ['Analizando tu silueta...','Aplicando la prenda con IA...','Ajust
 // ══════════════════════════════════════════════════════════
 function getCredits(){
   const v=localStorage.getItem(CREDIT_KEY);
-  if(v===null){localStorage.setItem(CREDIT_KEY,'1');return 1;}
+  if(v===null){localStorage.setItem(CREDIT_KEY,String(FREE_CREDITS));return FREE_CREDITS;}
   return parseInt(v,10)||0;
 }
 function spendCredit(){
