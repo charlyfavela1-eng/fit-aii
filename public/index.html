@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="theme-color" content="#030712"/>
+<title>FitAI — Pruébate ropa con Inteligencia Artificial</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#0ea5e9;--brand2:#8b5cf6;
+  --bg:#030712;--card:rgba(255,255,255,0.04);
+  --border:rgba(255,255,255,0.08);--muted:#6b7280;
+}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:#f9fafb;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* ── LAYOUT ── */
+#app{min-height:100vh;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
+.screen.active{display:flex}
+.flex1{flex:1;min-height:0}
+.scroll{overflow-y:auto}
+
+/* ── UTILS ── */
+.gtext{background:linear-gradient(135deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.glass{background:rgba(255,255,255,0.05);backdrop-filter:blur(12px);border:1px solid var(--border)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:1.25rem}
+.hero-bg{background:
+  radial-gradient(ellipse 80% 50% at 50% -5%,rgba(14,165,233,.18) 0%,transparent 70%),
+  radial-gradient(ellipse 60% 40% at 85% 80%,rgba(139,92,246,.12) 0%,transparent 60%),
+  var(--bg)}
+.btn{display:block;width:100%;padding:1rem;border-radius:1rem;font-size:1rem;font-weight:700;text-align:center;transition:.15s;cursor:pointer;border:none}
+.btn-p{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+.btn-p:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 28px rgba(14,165,233,.3)}
+.btn-p:active{transform:scale(.98)}
+.btn-p:disabled{opacity:.35;transform:none;box-shadow:none;cursor:not-allowed}
+.btn-g{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#d1d5db;border-radius:1rem;padding:.75rem}
+.btn-g:hover{background:rgba(255,255,255,.1)}
+
+/* ── HEADER ── */
+.hdr{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;background:rgba(3,7,18,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20;flex-shrink:0}
+.hdr-back{font-size:1.25rem;color:var(--muted);padding:.25rem;transition:.15s}
+.hdr-back:hover{color:#fff}
+.step-bar{display:flex;align-items:center;gap:.5rem;flex:1}
+.sdot{width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;transition:.25s;background:rgba(255,255,255,.08);color:var(--muted)}
+.sdot.active{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+.sdot.done{background:var(--brand);color:#fff}
+.slbl{font-size:.75rem;font-weight:600;color:var(--muted);transition:.25s}
+.slbl.active{color:#fff}.slbl.done{color:var(--brand)}
+.sline{flex:1;height:1px;background:rgba(255,255,255,.08);transition:.25s}
+.sline.done{background:rgba(14,165,233,.4)}
+.cpill{display:flex;align-items:center;gap:.3rem;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:99px;padding:.3rem .7rem;font-size:.75rem;font-weight:700}
+
+/* ── LANDING ── */
+.lnav{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;flex-shrink:0}
+.llogo{font-size:1.4rem;font-weight:900}
+.lbadge{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:99px;padding:.3rem .75rem;font-size:.7rem;color:var(--muted)}
+.lhero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:1.5rem 1.5rem 0;flex-shrink:0}
+.ewrap{position:relative;width:11rem;height:11rem;margin-bottom:2rem}
+.ecenter{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.ecenter-i{width:5rem;height:5rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.25),rgba(139,92,246,.25));display:flex;align-items:center;justify-content:center;font-size:2rem;animation:pulse-ring 2s ease-out infinite}
+.e1,.e2,.e3,.e4{position:absolute;font-size:2.75rem}
+.e1{top:0;left:2rem;animation:float 3s ease-in-out infinite}
+.e2{top:2rem;right:0;animation:float 3s ease-in-out .8s infinite}
+.e3{bottom:2rem;left:0;animation:float 3s ease-in-out 1.2s infinite}
+.e4{bottom:0;right:2rem;animation:float 3s ease-in-out .4s infinite}
+.ltitle{font-size:2.25rem;font-weight:900;line-height:1.1;margin-bottom:1rem}
+.lsub{color:var(--muted);font-size:.95rem;line-height:1.6;max-width:18rem;margin-bottom:.5rem}
+.lpills{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin:1rem 0 2rem}
+.pill{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:99px;padding:.3rem .85rem;font-size:.75rem;color:#d1d5db}
+.lcta{padding:0 1.25rem 2rem;display:flex;flex-direction:column;gap:.75rem;flex-shrink:0}
+.lcta-note{text-align:center;font-size:.75rem;color:var(--muted)}
+.howsec{padding:1.5rem 1.25rem 3rem;flex-shrink:0}
+.howlbl{text-align:center;font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.howgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.howcard{padding:.875rem .625rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center}
+.howicon{font-size:1.5rem}
+.howtitle{font-size:.75rem;font-weight:700}
+.howdesc{font-size:.65rem;color:var(--muted);line-height:1.5}
+
+/* ── CAMERA ── */
+.camsec{padding:1.25rem;display:flex;flex-direction:column;gap:1rem}
+.sectitle{font-size:1.5rem;font-weight:900;margin-bottom:.25rem}
+.secsub{font-size:.875rem;color:var(--muted)}
+.cam-idle{display:flex;flex-direction:column;align-items:center;gap:1.25rem;padding:2.5rem 1.5rem;text-align:center}
+.cam-idle-icon{width:5rem;height:5rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.2),rgba(139,92,246,.2));display:flex;align-items:center;justify-content:center;font-size:2.5rem;animation:float 3s ease-in-out infinite}
+.cam-idle-title{font-size:1.1rem;font-weight:700}
+.cam-idle-desc{font-size:.85rem;color:var(--muted);line-height:1.6}
+.cam-idle-note{font-size:.7rem;color:#374151}
+#videoWrap{position:relative;width:100%;border-radius:1.25rem;overflow:hidden;background:#000;aspect-ratio:3/4}
+video{width:100%;height:100%;object-fit:cover}
+.camov{position:absolute;inset:0;pointer-events:none}
+.camguide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.camring{width:10rem;height:16rem;border:2px solid rgba(255,255,255,.25);border-radius:50%}
+.camcorner{position:absolute;width:2rem;height:2rem;border-color:rgba(56,189,248,.7)}
+.camcorner.tl{top:.75rem;left:.75rem;border-style:solid;border-width:2px 0 0 2px;border-radius:.4rem 0 0 0}
+.camcorner.tr{top:.75rem;right:.75rem;border-style:solid;border-width:2px 2px 0 0;border-radius:0 .4rem 0 0}
+.camcorner.bl{bottom:.75rem;left:.75rem;border-style:solid;border-width:0 0 2px 2px;border-radius:0 0 0 .4rem}
+.camcorner.br{bottom:.75rem;right:.75rem;border-style:solid;border-width:0 2px 2px 0;border-radius:0 0 .4rem 0}
+.camhint{position:absolute;bottom:.75rem;left:0;right:0;text-align:center;font-size:.7rem;color:rgba(255,255,255,.4)}
+.camctrl{display:flex;gap:.75rem;margin-top:.75rem}
+.camflip{width:3rem;height:3rem;border-radius:.875rem;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid var(--border)}
+.camflip:hover{background:rgba(255,255,255,.12)}
+.camcapture{flex:1;padding:.875rem;border-radius:.875rem;font-size:1rem;font-weight:700;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;cursor:pointer}
+.camcapture:hover{opacity:.9}
+.preview-wrap{position:relative;border-radius:1.25rem;overflow:hidden;aspect-ratio:3/4;width:100%}
+.preview-wrap img{width:100%;height:100%;object-fit:cover}
+.preview-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),transparent)}
+.preview-footer{position:absolute;bottom:1rem;left:1rem;right:1rem;display:flex;align-items:center;justify-content:space-between}
+.prev-badge{display:flex;align-items:center;gap:.4rem;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);border-radius:99px;padding:.35rem .75rem;font-size:.7rem;color:#86efac;font-weight:600}
+.prev-dot{width:.45rem;height:.45rem;border-radius:50%;background:#4ade80}
+.retake-btn{font-size:.75rem;color:rgba(255,255,255,.6);text-decoration:underline;cursor:pointer}
+.retake-btn:hover{color:#fff}
+
+/* ── SIZE / FIT ── */
+.sizesec{display:flex;flex-direction:column;gap:.75rem}
+.sizehdr{display:flex;justify-content:space-between;align-items:center}
+.sizelbl{font-size:.875rem;font-weight:600;color:#d1d5db}
+.sizesub{font-size:.7rem;color:var(--muted)}
+.sizegrid{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem}
+.sbtn{display:flex;flex-direction:column;align-items:center;padding:.5rem .25rem;border-radius:.75rem;transition:.15s;background:rgba(255,255,255,.05);border:1px solid var(--border);cursor:pointer}
+.sbtn:hover{background:rgba(255,255,255,.1)}
+.sbtn.sel{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;box-shadow:0 4px 15px rgba(14,165,233,.3)}
+.sbtn-lbl{font-size:.8rem;font-weight:700}
+.sbtn-sub{font-size:.55rem;opacity:.6;margin-top:.1rem}
+.fitbadge{border-radius:1.1rem;padding:1rem;border:1px solid;display:flex;flex-direction:column;gap:.75rem}
+.fitbadge.green{background:rgba(5,46,22,.5);border-color:rgba(20,83,45,.5)}
+.fitbadge.yellow{background:rgba(66,32,6,.5);border-color:rgba(113,63,18,.5)}
+.fitbadge.red{background:rgba(69,10,10,.5);border-color:rgba(127,29,29,.5)}
+.fbtop{display:flex;align-items:center;justify-content:space-between}
+.fbleft{display:flex;align-items:center;gap:.5rem}
+.fbdot{width:.5rem;height:.5rem;border-radius:50%}
+.fbdot.green{background:#4ade80}.fbdot.yellow{background:#fbbf24}.fbdot.red{background:#f87171}
+.fbname{font-weight:700;font-size:.875rem}
+.fbname.green{color:#4ade80}.fbname.yellow{color:#fbbf24}.fbname.red{color:#f87171}
+.fbsizes{font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.25rem}
+.fbbar-wrap{display:flex;flex-direction:column;gap:.35rem}
+.fbbar-track{position:relative;height:.5rem;background:#1f2937;border-radius:99px;overflow:hidden}
+.fbbar-l{position:absolute;left:0;top:0;bottom:0;width:50%;background:rgba(59,130,246,.2)}
+.fbbar-r{position:absolute;right:0;top:0;bottom:0;width:50%;background:rgba(239,68,68,.15)}
+.fbbar-div{position:absolute;top:0;bottom:0;left:50%;width:1px;background:#374151}
+.fbbar-thumb{position:absolute;top:0;height:.5rem;width:.75rem;border-radius:99px;transform:translateX(-50%);transition:.5s}
+.fbbar-thumb.green{background:#4ade80}.fbbar-thumb.yellow{background:#fbbf24}.fbbar-thumb.red{background:#f87171}
+.fbbar-lbls{display:flex;justify-content:space-between;font-size:.6rem;color:#374151}
+.fbdesc{font-size:.75rem;color:var(--muted);line-height:1.5}
+.fbdesc span{font-weight:600}
+.fbdesc span.green{color:#4ade80}.fbdesc span.yellow{color:#fbbf24}.fbdesc span.red{color:#f87171}
+
+/* ── CATALOG ── */
+.cattabs{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.25rem;scrollbar-width:none}
+.cattabs::-webkit-scrollbar{display:none}
+.cattab{flex-shrink:0;padding:.4rem 1rem;border-radius:99px;font-size:.8rem;font-weight:600;transition:.15s;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);cursor:pointer}
+.cattab:hover{color:#fff}
+.cattab.active{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;color:#fff}
+.ggrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.gcard{display:flex;flex-direction:column;border-radius:1.25rem;overflow:hidden;text-align:left;transition:.2s;cursor:pointer;border:1px solid var(--border);background:var(--card)}
+.gcard:hover{border-color:rgba(255,255,255,.15)}
+.gcard.sel{background:rgba(14,165,233,.08);border-color:var(--brand);box-shadow:0 0 0 1px rgba(14,165,233,.25)}
+.gthumb{height:9rem;display:flex;align-items:center;justify-content:center;position:relative}
+.gemoji{font-size:3.25rem;position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}
+.gcheck{position:absolute;top:.5rem;right:.5rem;width:1.4rem;height:1.4rem;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fff}
+.ginfo{padding:.75rem}
+.gname{font-size:.875rem;font-weight:700;line-height:1.2}
+.gcolor{font-size:.7rem;color:var(--muted);margin-top:.15rem}
+.gmeta{display:flex;align-items:center;justify-content:space-between;margin-top:.5rem}
+.gsizetag{font-size:.7rem;font-weight:700;padding:.2rem .5rem;border-radius:99px;background:rgba(255,255,255,.08);color:#d1d5db}
+.gprice{font-size:.8rem;font-weight:700;color:var(--brand)}
+
+/* ── STICKY CTA ── */
+.sticky-cta{position:sticky;bottom:0;padding:1rem 1.25rem;background:linear-gradient(to top,rgba(3,7,18,1) 60%,transparent);flex-shrink:0}
+
+/* ── GENERATING ── */
+.genscrn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;padding:2rem}
+.genwrap{position:relative;width:7rem;height:7rem}
+.genring{width:7rem;height:7rem;border-radius:50%;border:2px solid rgba(14,165,233,.15);border-top-color:var(--brand);animation:spin 1s linear infinite;position:absolute;inset:0}
+.geninner{position:absolute;inset:.75rem;border-radius:50%;background:linear-gradient(135deg,rgba(14,165,233,.15),rgba(139,92,246,.15));display:flex;align-items:center;justify-content:center;font-size:1.75rem}
+.gentxt{text-align:center}
+.gentitle{font-size:1.5rem;font-weight:900;margin-bottom:.5rem}
+.genmsg{color:var(--brand);font-size:.875rem;font-weight:600;min-height:1.25rem}
+.gennote{font-size:.7rem;color:#374151;margin-top:.5rem}
+.gendots{display:flex;gap:.5rem;margin-top:.5rem}
+.gendot{width:.5rem;height:.5rem;border-radius:50%;background:#1f2937;transition:.4s}
+.gendot.on{background:var(--brand)}
+.gensizenote{font-size:.7rem;color:var(--muted);margin-top:.25rem}
+
+/* ── RESULT ── */
+.rhdnr{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.25rem;flex-shrink:0}
+.rclose{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .75rem;font-size:.875rem;color:var(--muted);cursor:pointer}
+.rclose:hover{color:#fff}
+.rlogo{font-size:1.25rem;font-weight:900}
+.rshare{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:.75rem;padding:.5rem .875rem;font-size:.8rem;font-weight:600;color:#d1d5db;cursor:pointer}
+.rshare:hover{color:#fff}
+.rbody{flex:1;overflow-y:auto;padding:0 1.25rem 2rem;display:flex;flex-direction:column;gap:1.25rem}
+.rtitle{font-size:1.5rem;font-weight:900;margin-bottom:.35rem}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.clbl{font-size:.7rem;font-weight:600;text-align:center;margin-bottom:.4rem;color:var(--muted)}
+.clbl.ai{color:var(--brand)}
+.cimgwrap{border-radius:1.1rem;overflow:hidden;aspect-ratio:3/4;position:relative}
+.cimgwrap img{width:100%;height:100%;object-fit:cover}
+.aibadge{position:absolute;top:.5rem;right:.5rem;background:rgba(14,165,233,.85);color:#fff;font-size:.6rem;font-weight:700;padding:.2rem .5rem;border-radius:99px}
+.gicard{display:flex;align-items:center;gap:.875rem;padding:1rem}
+.giicon{width:3.5rem;height:3.5rem;border-radius:.875rem;display:flex;align-items:center;justify-content:center;font-size:1.75rem;flex-shrink:0}
+.giname{font-weight:700;font-size:.95rem}
+.gibrand{font-size:.8rem;color:var(--muted);margin-top:.1rem}
+.giprice{font-size:1.1rem;font-weight:700;color:var(--brand);margin-top:.25rem}
+.ractions{display:flex;flex-direction:column;gap:.75rem}
+.rbuy{display:block;padding:1.1rem;border-radius:1rem;font-size:1rem;font-weight:700;text-align:center;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;cursor:pointer;transition:.15s;width:100%}
+.rbuy:hover{opacity:.9;transform:translateY(-1px)}
+.rrow{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.rsec{padding:.875rem;border-radius:1rem;font-size:.875rem;font-weight:600;text-align:center;background:rgba(255,255,255,.06);border:1px solid var(--border);color:#d1d5db;cursor:pointer;transition:.15s;width:100%}
+.rsec:hover{background:rgba(255,255,255,.1);color:#fff}
+.rrestart{text-align:center;font-size:.875rem;color:var(--muted);cursor:pointer;width:100%;padding:.5rem}
+.rrestart:hover{color:#fff}
+
+/* ── ERROR ── */
+.errbar{display:flex;align-items:flex-start;gap:.75rem;padding:1rem;border-radius:1rem;background:rgba(69,10,10,.6);border:1px solid rgba(127,29,29,.5);margin:.75rem 1.25rem 0;flex-shrink:0}
+.erricon{font-size:1.1rem;flex-shrink:0}
+.errtitle{font-size:.8rem;font-weight:700;color:#fca5a5}
+.errmsg{font-size:.7rem;color:rgba(252,165,165,.6);margin-top:.15rem}
+.errclose{margin-left:auto;color:#7f1d1d;font-size:.875rem;flex-shrink:0;cursor:pointer}
+.errclose:hover{color:#fca5a5}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(4rem);background:rgba(15,23,42,.95);border:1px solid var(--border);color:#e2e8f0;padding:.6rem 1.2rem;border-radius:99px;font-size:.85rem;font-weight:600;z-index:999;transition:transform .3s,opacity .3s;opacity:0;pointer-events:none;white-space:nowrap;backdrop-filter:blur(12px)}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── ANIMATIONS ── */
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(14,165,233,.4)}100%{box-shadow:0 0 0 20px rgba(14,165,233,0)}}
+@keyframes fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fadein{animation:fadein .35s ease forwards}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ═══════════════════ LANDING ═══════════════════ -->
+<div id="s-landing" class="screen active hero-bg" style="overflow-y:auto">
+  <nav class="lnav">
+    <span class="llogo gtext">FitAI</span>
+    <span class="lbadge">Nano Banana 2 ✨</span>
+  </nav>
+  <div class="lhero">
+    <div class="ewrap">
+      <span class="e1">👗</span><span class="e2">🧥</span>
+      <span class="e3">👕</span><span class="e4">✨</span>
+      <div class="ecenter"><div class="ecenter-i">📸</div></div>
+    </div>
+    <h1 class="ltitle">Pruébate ropa<br><span class="gtext">con Inteligencia Artificial</span></h1>
+    <p class="lsub">Tómate una selfie y ve cómo te queda cualquier prenda. La IA respeta tu talla real.</p>
+    <p style="color:var(--brand);font-size:.875rem;font-weight:600;margin:.5rem 0 1.25rem">✓ Sin probador &nbsp;·&nbsp; ✓ Sin filas &nbsp;·&nbsp; ✓ 100% IA</p>
+    <div class="lpills">
+      <span class="pill">Tallas reales</span>
+      <span class="pill">Fit preciso</span>
+      <span class="pill">4K quality</span>
+      <span class="pill">Privado</span>
+    </div>
+  </div>
+  <div class="lcta">
+    <button class="btn btn-p" onclick="goTo('photo')" style="padding:1.2rem;font-size:1.1rem">Probar gratis →</button>
+    <p class="lcta-note">1 prueba gratuita · Sin registro</p>
+  </div>
+  <div class="howsec">
+    <p class="howlbl">Cómo funciona</p>
+    <div class="howgrid">
+      <div class="card howcard"><span class="howicon">📸</span><p class="howtitle">Tu foto</p><p class="howdesc">Tómate una selfie de cuerpo completo</p></div>
+      <div class="card howcard"><span class="howicon">👗</span><p class="howtitle">Elige prenda</p><p class="howdesc">Selecciona talla y artículo del catálogo</p></div>
+      <div class="card howcard"><span class="howicon">✨</span><p class="howtitle">Ver resultado</p><p class="howdesc">La IA genera cómo te queda en segundos</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PHOTO ═══════════════════ -->
+<div id="s-photo" class="screen" style="flex-direction:column">
+  <div class="hdr">
+    <button class="hdr-back" onclick="safeGoTo('landing')">←</button>
+    <div class="step-bar" id="sb-photo"></div>
+    <div class="cpill"><span style="color:#fbbf24">⚡</span><span id="cr-photo">1</span></div>
+  </div>
+  <div id="err-photo" style="display:none"></div>
+  <div class="camsec flex1 scroll">
+    <div>
+      <h2 class="sectitle">Toma tu foto</h2>
+      <p class="secsub">Párate de frente, de cuerpo completo</p>
+    </div>
+    <!-- Idle -->
+    <div id="cam-idle" class="card cam-idle">
+      <div class="cam-idle-icon">📸</div>
+      <div>
+        <p class="cam-idle-title">Activa tu cámara</p>
+        <p class="cam-idle-desc">Necesitamos acceso para mostrarte cómo queda la ropa</p>
+      </div>
+      <button class="btn btn-p" onclick="startCamera()" style="padding:.9rem 2rem;width:auto">Activar cámara</button>
+      <p class="cam-idle-note">Tu foto no se almacena permanentemente</p>
+    </div>
+    <!-- Live -->
+    <div id="cam-live" style="display:none">
+      <div id="videoWrap">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="camov">
+          <div class="camguide"><div class="camring"></div></div>
+          <div class="camcorner tl"></div><div class="camcorner tr"></div>
+          <div class="camcorner bl"></div><div class="camcorner br"></div>
+          <div class="camhint">Párate de frente, cuerpo completo</div>
+        </div>
+      </div>
+      <div class="camctrl">
+        <button class="camflip" onclick="flipCamera()" title="Cambiar cámara">🔄</button>
+        <button class="camcapture" onclick="capturePhoto()">📸 Capturar foto</button>
+      </div>
+    </div>
+    <!-- Preview -->
+    <div id="cam-preview" style="display:none">
+      <div class="preview-wrap">
+        <img id="preview-img" src="" alt="Tu foto"/>
+        <div class="preview-ov"></div>
+        <div class="preview-footer">
+          <div class="prev-badge"><div class="prev-dot"></div>Foto tomada</div>
+          <button class="retake-btn" onclick="retakePhoto()">Tomar otra</button>
+        </div>
+      </div>
+      <div style="margin-top:.875rem">
+        <button class="btn btn-p" onclick="goTo('catalog')" style="padding:1rem">Continuar → Elegir prenda</button>
+      </div>
+    </div>
+    <canvas id="canvas" style="display:none"></canvas>
+  </div>
+</div>
+
+<!-- ═══════════════════ CATALOG ═══════════════════ -->
+<div id="s-catalog" class="screen" style="flex-direction:column">
+  <div class="hdr">
+    <button class="hdr-back" onclick="goTo('photo')">←</button>
+    <div class="step-bar" id="sb-catalog"></div>
+    <div class="cpill"><span style="color:#fbbf24">⚡</span><span id="cr-catalog">1</span></div>
+  </div>
+  <div id="err-catalog" style="display:none"></div>
+  <div class="flex1 scroll" style="padding:1.25rem;display:flex;flex-direction:column;gap:1.25rem">
+    <div>
+      <h2 class="sectitle">Elige una prenda</h2>
+      <p class="secsub">Selecciona tu talla y la prenda que quieres probar</p>
+    </div>
+    <div class="sizesec">
+      <div class="sizehdr">
+        <span class="sizelbl">Tu talla</span>
+        <span class="sizesub">Pecho en cm</span>
+      </div>
+      <div class="sizegrid" id="size-grid"></div>
+    </div>
+    <div id="fit-badge-wrap"></div>
+    <div class="cattabs" id="cat-tabs"></div>
+    <div class="ggrid" id="garments-grid"></div>
+    <div style="height:1rem"></div>
+  </div>
+  <div class="sticky-cta">
+    <button class="btn btn-p" id="gen-btn" onclick="handleGenerate()" disabled style="padding:1.1rem">
+      ✨ Generar mi look <span style="opacity:.6;font-size:.875rem;margin-left:.25rem">· 1 crédito</span>
+    </button>
+    <p id="gen-hint" style="text-align:center;font-size:.75rem;color:var(--muted);margin-top:.5rem;min-height:1rem"></p>
+  </div>
+</div>
+
+<!-- ═══════════════════ GENERATING ═══════════════════ -->
+<div id="s-generating" class="screen" style="flex-direction:column">
+  <div class="hdr">
+    <div style="width:2rem"></div>
+    <div class="step-bar" id="sb-gen"></div>
+    <div class="cpill"><span style="color:#fbbf24">⚡</span><span id="cr-gen">0</span></div>
+  </div>
+  <div class="genscrn">
+    <div class="genwrap">
+      <div class="genring"></div>
+      <div class="geninner">✨</div>
+    </div>
+    <div class="gentxt">
+      <h2 class="gentitle">Generando tu look</h2>
+      <p class="genmsg" id="gen-msg">Analizando tu silueta...</p>
+      <p class="gensizenote" id="gen-size-note"></p>
+      <p class="gennote">Esto puede tomar hasta 30 segundos...</p>
+    </div>
+    <div class="gendots">
+      <div class="gendot" id="gd0"></div><div class="gendot" id="gd1"></div>
+      <div class="gendot" id="gd2"></div><div class="gendot" id="gd3"></div>
+      <div class="gendot" id="gd4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ RESULT ═══════════════════ -->
+<div id="s-result" class="screen hero-bg" style="flex-direction:column">
+  <div class="rhdnr">
+    <button class="rclose" onclick="startOver()">✕ Cerrar</button>
+    <span class="rlogo gtext">FitAI</span>
+    <button class="rshare" onclick="shareResult()">📤 Compartir</button>
+  </div>
+  <div class="rbody">
+    <div>
+      <h2 class="rtitle">¡Así te vería! ✨</h2>
+      <div id="r-fit-compact"></div>
+    </div>
+    <div class="cgrid">
+      <div>
+        <p class="clbl">Tu foto</p>
+        <div class="cimgwrap"><img id="r-original" src="" alt="Original"/></div>
+      </div>
+      <div>
+        <p class="clbl ai">Resultado IA</p>
+        <div class="cimgwrap">
+          <img id="r-ai" src="" alt="Resultado IA"/>
+          <div class="aibadge">IA ✨</div>
+        </div>
+      </div>
+    </div>
+    <div id="r-fit-full"></div>
+    <div class="card gicard" id="r-garment"></div>
+    <div class="ractions">
+      <button class="rbuy" onclick="toast('Conecta aquí tu tienda 🛍️')">🛍️ Comprar ahora</button>
+      <div class="rrow">
+        <button class="rsec" onclick="shareResult()">📤 Compartir</button>
+        <button class="rsec" id="r-download-btn" onclick="downloadResult()">⬇️ Descargar</button>
+      </div>
+      <button class="rrestart" onclick="startOver()">Probar otra prenda →</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════
+const ATLAS_KEY  = 'apikey-b27686b0396547b8986c7783809a7791';
+const ATLAS_URL  = 'https://api.atlascloud.ai/api/v1/model';
+const IMGUR_CLIENT = '546c25a59c58ad7';
+const CREDIT_KEY = 'fitaii_credits_v2';
+const FREE_CREDITS = 3;
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const S = {
+  view:'landing', photoBase64:null, photoPreview:null,
+  garment:null, size:null, credits:1,
+  resultImage:null, activeCat:'all',
+  msgIdx:0, msgTimer:null, polling:false,
+  facing:'user', stream:null,
+};
+
+// ══════════════════════════════════════════════════════════
+// CATALOG DATA
+// ══════════════════════════════════════════════════════════
+const CATALOG = [
+  {id:'h1',name:'Cloud Hoodie',brand:'FitAI Studio',size:'M',color:'Negro Carbón',hex:'#1a1a1a',type:'hoodie',cat:'tops',price:1290,emoji:'🖤'},
+  {id:'t1',name:'Essential Tee',brand:'FitAI Studio',size:'L',color:'Blanco Óptico',hex:'#e5e5e5',type:'camiseta',cat:'tops',price:490,emoji:'🤍'},
+  {id:'j1',name:'Moto Jacket',brand:'FitAI Studio',size:'S',color:'Café Cognac',hex:'#8B4513',type:'chamarra',cat:'outerwear',price:2490,emoji:'🤎'},
+  {id:'d1',name:'Linen Midi Dress',brand:'FitAI Studio',size:'XS',color:'Azul Cielo',hex:'#87CEEB',type:'vestido',cat:'dresses',price:1890,emoji:'💙'},
+  {id:'b1',name:'Power Blazer',brand:'FitAI Studio',size:'XL',color:'Beige Arena',hex:'#D2B48C',type:'blazer',cat:'outerwear',price:2190,emoji:'🤍'},
+  {id:'c1',name:'Vintage Crop',brand:'FitAI Studio',size:'XXL',color:'Verde Oliva',hex:'#6B7C3C',type:'camiseta cropped',cat:'tops',price:590,emoji:'💚'},
+];
+const CATS  = [{id:'all',lbl:'Todo'},{id:'tops',lbl:'Tops'},{id:'outerwear',lbl:'Exteriores'},{id:'dresses',lbl:'Vestidos'}];
+const SIZES = [{v:'XS',sub:'32-34'},{v:'S',sub:'34-36'},{v:'M',sub:'38-40'},{v:'L',sub:'42-44'},{v:'XL',sub:'46-48'},{v:'XXL',sub:'50-52'}];
+const SORD  = ['XS','S','M','L','XL','XXL'];
+const MSGS  = ['Analizando tu silueta...','Aplicando la prenda con IA...','Ajustando proporciones y talla...','Añadiendo iluminación y detalle...','Finalizando tu look...'];
+
+// ══════════════════════════════════════════════════════════
+// CREDITS
+// ══════════════════════════════════════════════════════════
+function getCredits(){
+  const v=localStorage.getItem(CREDIT_KEY);
+  if(v===null){localStorage.setItem(CREDIT_KEY,String(FREE_CREDITS));return FREE_CREDITS;}
+  return parseInt(v,10)||0;
+}
+function spendCredit(){
+  const c=getCredits(); if(c<=0)return false;
+  localStorage.setItem(CREDIT_KEY,String(c-1)); return true;
+}
+function refundCredit(){
+  const c=getCredits();
+  localStorage.setItem(CREDIT_KEY,String(c+1));
+  S.credits=c+1; refreshCredits();
+}
+function refreshCredits(){
+  S.credits=getCredits();
+  ['cr-photo','cr-catalog','cr-gen'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=S.credits;
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// SIZE / FIT
+// ══════════════════════════════════════════════════════════
+function sizeDiff(gs,ps){return SORD.indexOf(gs)-SORD.indexOf(ps);}
+function fitLabel(d){
+  if(d===0) return 'Talla perfecta';
+  if(d===1) return 'Ligeramente grande'; if(d===2) return 'Grande (holgada)'; if(d>=3) return 'Muy grande (oversized)';
+  if(d===-1) return 'Ligeramente ajustada'; if(d===-2) return 'Pequeña (apretada)'; return 'Muy pequeña';
+}
+function fitDesc(d){
+  if(d===0) return 'te quedará perfectamente a tu medida';
+  if(d===1) return 'estará ligeramente holgada, con un look relajado';
+  if(d===2) return 'se verá notablemente grande, hombros caídos y mangas largas';
+  if(d>=3) return 'estará muy grande, estilo oversized extremo';
+  if(d===-1) return 'estará ligeramente ajustada, marcando la silueta';
+  if(d===-2) return 'estará apretada, con la tela tensionada';
+  return 'estará muy pequeña, considerablemente apretada';
+}
+function fitColor(d){return d===0?'green':Math.abs(d)===1?'yellow':'red';}
+
+function buildPrompt(g,ps){
+  const d=sizeDiff(g.size,ps), desc=fitDesc(d);
+  let mod='';
+  if(d>=2) mod='The garment is clearly oversized: shoulders drooping, sleeves too long, excess fabric bunching.';
+  else if(d===1) mod='Slightly large: relaxed fit, a bit of extra fabric at the shoulders.';
+  else if(d===-1) mod='Slightly small: fabric pulling at the chest seams.';
+  else if(d<=-2) mod='Clearly too small: very tight, fabric stretched across chest and shoulders.';
+  return [
+    `High-quality fashion photo of a person wearing a ${g.color} ${g.type} called "${g.name}".`,
+    `The garment is size ${g.size} but the person wears size ${ps}, so it ${desc}.`,
+    mod,
+    'Full body shot, studio lighting, white or light gray background, fashion catalog style, photorealistic, 4K quality.',
+  ].filter(Boolean).join(' ');
+}
+
+// ══════════════════════════════════════════════════════════
+// FIT BADGE RENDERER
+// ══════════════════════════════════════════════════════════
+function renderFitBadge(id,g,ps,compact){
+  const el=document.getElementById(id); if(!el) return;
+  if(!g||!ps){el.innerHTML='';return;}
+  const d=sizeDiff(g.size,ps), col=fitColor(d), lbl=fitLabel(d), desc=fitDesc(d);
+  const pct=Math.max(5,Math.min(95,50+d*(-14)));
+  const c={green:{bg:'rgba(5,46,22,.5)',border:'rgba(20,83,45,.5)',dot:'#4ade80',txt:'#4ade80'},
+            yellow:{bg:'rgba(66,32,6,.5)',border:'rgba(113,63,18,.5)',dot:'#fbbf24',txt:'#fbbf24'},
+            red:{bg:'rgba(69,10,10,.5)',border:'rgba(127,29,29,.5)',dot:'#f87171',txt:'#f87171'}}[col];
+  if(compact){
+    el.innerHTML=`<div style="display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .85rem;border-radius:99px;background:${c.bg};border:1px solid ${c.border}">
+      <div style="width:.4rem;height:.4rem;border-radius:50%;background:${c.dot}"></div>
+      <span style="font-size:.75rem;font-weight:700;color:${c.txt}">${lbl}</span></div>`;
+    return;
+  }
+  el.innerHTML=`<div class="fitbadge ${col}">
+    <div class="fbtop">
+      <div class="fbleft"><div class="fbdot ${col}"></div><span class="fbname ${col}">${lbl}</span></div>
+      <div class="fbsizes"><span>Prenda ${g.size}</span><span>→</span><span>Tú ${ps}</span></div>
+    </div>
+    <div class="fbbar-wrap">
+      <div class="fbbar-track">
+        <div class="fbbar-l"></div><div class="fbbar-r"></div><div class="fbbar-div"></div>
+        <div class="fbbar-thumb ${col}" style="left:${pct}%"></div>
+      </div>
+      <div class="fbbar-lbls"><span>Muy grande</span><span>Perfecto</span><span>Muy chica</span></div>
+    </div>
+    <p class="fbdesc">Esta prenda <span class="${col}">${desc}</span></p>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// ERROR / TOAST
+// ══════════════════════════════════════════════════════════
+function showErr(screen,msg){
+  const el=document.getElementById('err-'+screen); if(!el) return;
+  if(!msg){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='block';
+  el.innerHTML=`<div class="errbar">
+    <span class="erricon">⚠</span>
+    <div><p class="errtitle">Ocurrió un error</p><p class="errmsg">${msg}</p></div>
+    <button class="errclose" onclick="showErr('${screen}','')">✕</button>
+  </div>`;
+}
+
+let toastTimer=null;
+function toast(msg){
+  const el=document.getElementById('toast'); if(!el) return;
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ══════════════════════════════════════════════════════════
+// STEPBAR
+// ══════════════════════════════════════════════════════════
+function renderStepbar(id,view){
+  const el=document.getElementById(id); if(!el) return;
+  const STEPS=[{k:'photo',l:'Tu foto'},{k:'catalog',l:'Prenda'},{k:'result',l:'Resultado'}];
+  const VIDX={photo:0,catalog:1,generating:1.5,result:2};
+  const cur=VIDX[view]??0;
+  el.innerHTML=STEPS.map((s,i)=>{
+    const done=cur>i, active=cur>=i&&cur<i+1;
+    const show=window.innerWidth>=380;
+    return `<div class="sdot ${done?'done':active?'active':''}">${done?'✓':i+1}</div>
+      ${show?`<span class="slbl ${done?'done':active?'active':''}">${s.l}</span>`:''}
+      ${i<2?`<div class="sline ${done?'done':''}"></div>`:''}`;
+  }).join('');
+}
+
+function refreshUI(view){
+  refreshCredits();
+  ['sb-photo','sb-catalog','sb-gen'].forEach(id=>renderStepbar(id,view));
+}
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+function goTo(view){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('s-'+view);
+  if(el){el.classList.add('active');requestAnimationFrame(()=>el.classList.add('fadein'));
+    setTimeout(()=>el.classList.remove('fadein'),400);}
+  S.view=view;
+  refreshUI(view);
+  if(view==='catalog') renderCatalog();
+  if(view==='generating') startGenFlow();
+}
+
+function safeGoTo(view){
+  stopStream();
+  goTo(view);
+}
+
+// ══════════════════════════════════════════════════════════
+// CAMERA
+// ══════════════════════════════════════════════════════════
+function stopStream(){
+  if(S.stream){S.stream.getTracks().forEach(t=>t.stop());S.stream=null;}
+}
+
+async function startCamera(facingMode){
+  facingMode=facingMode||S.facing||'user';
+  S.facing=facingMode;
+  stopStream();
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode,width:{ideal:1080},height:{ideal:1440}},audio:false});
+    S.stream=s;
+    const v=document.getElementById('video');
+    v.srcObject=s;
+    v.style.transform=facingMode==='user'?'scaleX(-1)':'none';
+    document.getElementById('cam-idle').style.display='none';
+    document.getElementById('cam-live').style.display='block';
+    document.getElementById('cam-preview').style.display='none';
+    showErr('photo','');
+  }catch(e){
+    showErr('photo','No se pudo acceder a la cámara. Verifica los permisos en tu navegador.');
+  }
+}
+
+function flipCamera(){
+  const next=S.facing==='user'?'environment':'user';
+  startCamera(next);
+}
+
+function capturePhoto(){
+  const video=document.getElementById('video');
+  const canvas=document.getElementById('canvas');
+  if(!video.videoWidth){showErr('photo','La cámara no está lista, espera un momento.');return;}
+  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  const ctx=canvas.getContext('2d');
+  if(S.facing==='user'){ctx.translate(canvas.width,0);ctx.scale(-1,1);}
+  ctx.drawImage(video,0,0);
+  // resize to max 1024px to stay under imgbb limits
+  const MAX=1024;
+  let w=canvas.width, h=canvas.height;
+  if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+  const out=document.createElement('canvas'); out.width=w; out.height=h;
+  out.getContext('2d').drawImage(canvas,0,0,w,h);
+  const dataUrl=out.toDataURL('image/jpeg',0.85);
+  S.photoBase64=dataUrl.split(',')[1];
+  S.photoPreview=dataUrl;
+  stopStream();
+  document.getElementById('cam-live').style.display='none';
+  document.getElementById('cam-preview').style.display='block';
+  document.getElementById('preview-img').src=dataUrl;
+}
+
+function retakePhoto(){
+  S.photoBase64=null; S.photoPreview=null;
+  document.getElementById('cam-preview').style.display='none';
+  document.getElementById('cam-idle').style.display='flex';
+}
+
+// ══════════════════════════════════════════════════════════
+// CATALOG
+// ══════════════════════════════════════════════════════════
+function renderCatalog(){
+  renderSizes(); renderCatTabs(); renderGarments();
+  renderFitBadge('fit-badge-wrap',S.garment,S.size,false);
+  updateBtn();
+}
+
+function renderSizes(){
+  const el=document.getElementById('size-grid'); if(!el) return;
+  el.innerHTML=SIZES.map(s=>`
+    <button class="sbtn ${S.size===s.v?'sel':''}" onclick="selectSize('${s.v}')">
+      <span class="sbtn-lbl">${s.v}</span><span class="sbtn-sub">${s.sub}</span>
+    </button>`).join('');
+}
+
+function selectSize(v){S.size=v;renderSizes();renderFitBadge('fit-badge-wrap',S.garment,S.size,false);updateBtn();}
+
+function renderCatTabs(){
+  const el=document.getElementById('cat-tabs'); if(!el) return;
+  el.innerHTML=CATS.map(c=>`
+    <button class="cattab ${S.activeCat===c.id?'active':''}" onclick="selectCat('${c.id}')">${c.lbl}</button>`).join('');
+}
+
+function selectCat(id){S.activeCat=id;renderCatTabs();renderGarments();}
+
+function renderGarments(){
+  const el=document.getElementById('garments-grid'); if(!el) return;
+  const items=S.activeCat==='all'?CATALOG:CATALOG.filter(g=>g.cat===S.activeCat);
+  el.innerHTML=items.map(g=>`
+    <button class="gcard ${S.garment?.id===g.id?'sel':''}" onclick="selectGarment('${g.id}')">
+      <div class="gthumb" style="background:${g.hex}18">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,${g.hex}44 0%,transparent 70%)"></div>
+        <span class="gemoji">${g.emoji}</span>
+        ${S.garment?.id===g.id?'<div class="gcheck">✓</div>':''}
+      </div>
+      <div class="ginfo">
+        <p class="gname">${g.name}</p>
+        <p class="gcolor">${g.color}</p>
+        <div class="gmeta">
+          <span class="gsizetag">Talla ${g.size}</span>
+          <span class="gprice">$${g.price.toLocaleString('es-MX')}</span>
+        </div>
+      </div>
+    </button>`).join('');
+}
+
+function selectGarment(id){
+  S.garment=CATALOG.find(g=>g.id===id)||null;
+  renderGarments();
+  renderFitBadge('fit-badge-wrap',S.garment,S.size,false);
+  updateBtn();
+}
+
+function updateBtn(){
+  const btn=document.getElementById('gen-btn'); if(!btn) return;
+  const hintEl=document.getElementById('gen-hint');
+  const hasPhoto=!!S.photoBase64;
+  const ready=hasPhoto&&S.garment&&S.size&&getCredits()>0;
+  btn.disabled=!ready;
+  let hint='';
+  if(!hasPhoto) hint='Vuelve atrás y toma una foto primero';
+  else if(!S.size&&!S.garment) hint='Selecciona tu talla y una prenda para continuar';
+  else if(!S.size) hint='Falta: selecciona tu talla ↑';
+  else if(!S.garment) hint='Falta: elige una prenda del catálogo ↑';
+  else if(getCredits()<=0) hint='Sin créditos disponibles';
+  if(hintEl) hintEl.textContent=hint;
+}
+
+// ══════════════════════════════════════════════════════════
+// GENERATE
+// ══════════════════════════════════════════════════════════
+async function handleGenerate(){
+  if(!S.photoBase64||!S.garment||!S.size){updateBtn();return;}
+  if(getCredits()<=0){showErr('catalog','Ya usaste tu crédito gratuito.');return;}
+  spendCredit();
+  S.credits=getCredits();
+  showErr('catalog','');
+  goTo('generating');
+}
+
+function startGenFlow(){
+  clearInterval(S.msgTimer);
+  S.msgIdx=0; S.polling=false;
+  setMsg(MSGS[0]);
+  S.msgTimer=setInterval(()=>{S.msgIdx=(S.msgIdx+1)%MSGS.length;setMsg(MSGS[S.msgIdx]);},3500);
+  const sn=document.getElementById('gen-size-note');
+  if(sn&&S.garment&&S.size){
+    const d=sizeDiff(S.garment.size,S.size);
+    sn.textContent=d===0?'':`Ajustando talla ${S.garment.size} para alguien de talla ${S.size}`;
+  }
+  callAPI();
+}
+
+function setMsg(msg){
+  const el=document.getElementById('gen-msg'); if(el) el.textContent=msg;
+  for(let i=0;i<5;i++){const d=document.getElementById('gd'+i);if(d) d.className='gendot'+(S.msgIdx>=i?' on':'');}
+}
+
+async function callAPI(){
+  const prompt=buildPrompt(S.garment,S.size);
+  try{
+    setMsg('Subiendo tu foto de forma segura...');
+    const photoUrl=await uploadPhoto(S.photoBase64);
+    setMsg('Enviando a la IA...');
+    const res=await fetch(`${ATLAS_URL}/generateImage`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${ATLAS_KEY}`},
+      body:JSON.stringify({
+        model:'google/nano-banana-2/edit',
+        prompt,
+        images:[photoUrl],
+        enable_sync_mode:false,
+        enable_base64_output:false,
+      }),
+    });
+    if(!res.ok){
+      const txt=await res.text();
+      throw new Error(`Atlas API ${res.status}: ${txt.slice(0,300)}`);
+    }
+    const data=await res.json();
+    const syncUrl=data.images?.[0]??data.image??data.output?.[0];
+    if(syncUrl){done(syncUrl);return;}
+    const predId=data.id??data.prediction_id;
+    if(predId){await pollAPI(predId);return;}
+    throw new Error('Respuesta inesperada: '+JSON.stringify(data).slice(0,200));
+  }catch(e){
+    genFailed(e.message||'Error desconocido al generar la imagen');
+  }
+}
+
+async function uploadPhoto(base64){
+  const res=await fetch('https://api.imgur.com/3/image',{
+    method:'POST',
+    headers:{'Authorization':'Client-ID '+IMGUR_CLIENT,'Content-Type':'application/json'},
+    body:JSON.stringify({image:base64,type:'base64'})
+  });
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok||!data.success) throw new Error('Upload '+(res.status)+': '+(data?.data?.error||'error desconocido'));
+  return data.data.link;
+}
+
+async function pollAPI(predId){
+  S.polling=true; let attempts=0;
+  while(S.polling&&attempts<40){
+    await sleep(3000); attempts++;
+    try{
+      const res=await fetch(`${ATLAS_URL}/prediction/${predId}`,{
+        headers:{'Authorization':`Bearer ${ATLAS_KEY}`}});
+      const data=await res.json();
+      if(data.status==='succeeded'||data.status==='completed'){
+        const url=data.output?.[0]??data.images?.[0]??data.image;
+        done(url); return;
+      }
+      if(data.status==='failed') throw new Error(data.error||'Generación fallida en el servidor');
+    }catch(e){
+      genFailed(e.message||'Error al obtener resultado'); return;
+    }
+  }
+  if(S.polling) genFailed('Tiempo de espera agotado. Inténtalo de nuevo.');
+}
+
+function done(imageUrl){
+  clearInterval(S.msgTimer); S.polling=false;
+  S.resultImage=imageUrl;
+  renderResult();
+  goTo('result');
+}
+
+function genFailed(msg){
+  clearInterval(S.msgTimer); S.polling=false;
+  refundCredit();
+  goTo('catalog');
+  showErr('catalog',msg);
+}
+
+// ══════════════════════════════════════════════════════════
+// RESULT
+// ══════════════════════════════════════════════════════════
+function renderResult(){
+  const g=S.garment, ps=S.size;
+  document.getElementById('r-original').src=S.photoPreview||'';
+  document.getElementById('r-ai').src=S.resultImage||'';
+  renderFitBadge('r-fit-compact',g,ps,true);
+  renderFitBadge('r-fit-full',g,ps,false);
+  const card=document.getElementById('r-garment');
+  if(g&&card) card.innerHTML=`
+    <div class="giicon" style="background:${g.hex}22">${g.emoji}</div>
+    <div>
+      <p class="giname">${g.name}</p>
+      <p class="gibrand">${g.brand} · Talla ${g.size} · ${g.color}</p>
+      <p class="giprice">$${g.price.toLocaleString('es-MX')} MXN</p>
+    </div>`;
+}
+
+async function downloadResult(){
+  if(!S.resultImage) return;
+  const btn=document.getElementById('r-download-btn');
+  if(btn){btn.textContent='⏳ Descargando...';btn.disabled=true;}
+  try{
+    const res=await fetch(S.resultImage);
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='fitai-look.jpg';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('✓ Imagen descargada');
+  }catch{
+    // Fallback: open in new tab
+    window.open(S.resultImage,'_blank');
+    toast('Imagen abierta en nueva pestaña');
+  }finally{
+    if(btn){btn.textContent='⬇️ Descargar';btn.disabled=false;}
+  }
+}
+
+async function shareResult(){
+  if(navigator.share){
+    try{
+      await navigator.share({
+        title:'Mi look en FitAI',
+        text:`¡Mira cómo me quedaría el ${S.garment?.name}! Lo probé con IA en FitAI 🔥`,
+        url:location.href,
+      });
+    }catch(e){ if(e.name!=='AbortError') toast('No se pudo compartir'); }
+  }else{
+    try{
+      await navigator.clipboard.writeText(location.href);
+      toast('✓ Enlace copiado al portapapeles');
+    }catch{
+      toast('Copia este enlace: '+location.href.slice(0,40)+'...');
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// RESET
+// ══════════════════════════════════════════════════════════
+function startOver(){
+  clearInterval(S.msgTimer); S.polling=false; stopStream();
+  S.photoBase64=null; S.photoPreview=null;
+  S.garment=null; S.size=null; S.resultImage=null; S.activeCat='all';
+  document.getElementById('cam-idle').style.display='flex';
+  document.getElementById('cam-live').style.display='none';
+  document.getElementById('cam-preview').style.display='none';
+  showErr('photo',''); showErr('catalog','');
+  goTo('photo');
+}
+
+// ══════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+(function(){
+  S.credits=getCredits();
+  refreshUI('landing');
+})();
+</script>
+</body>
+</html>

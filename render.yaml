@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: fit-aii
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FAL_KEY
+        sync: false
