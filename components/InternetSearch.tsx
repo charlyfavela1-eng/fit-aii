@@ -21,6 +21,15 @@ interface InternetSearchProps {
   gender: 'mujer' | 'hombre' | 'mama'
 }
 
+type Store = 'all' | 'temu' | 'amazon' | 'shein'
+
+const STORE_LABELS: Record<Store, string> = {
+  all:    '🌐 Todas',
+  temu:   '🛍️ Temu',
+  amazon: '📦 Amazon MX',
+  shein:  '👗 Shein',
+}
+
 const CHIPS: Record<'mujer' | 'hombre' | 'mama', string[]> = {
   mujer: [
     'vestido midi casual',
@@ -41,29 +50,39 @@ const CHIPS: Record<'mujer' | 'hombre' | 'mama', string[]> = {
     'polo piqué negro',
   ],
   mama: [
-    'blusa floral mujer madura',
+    'blusa floral manga larga',
+    'conjunto cómodo dos piezas',
     'vestido casual señora',
-    'conjunto cómodo mujer',
-    'blusa bordada mexicana',
-    'cardigan suave mujer',
-    'pantalón elástico mujer',
-    'vestido floral manga corta',
+    'blusa bordada mujer',
+    'cardigan suave punto',
+    'pantalón elástico cómodo',
+    'vestido verano manga corta',
+    'blusa suelta estampada',
   ],
+}
+
+const PROVIDER_LABEL: Record<string, string> = {
+  'google-shopping':  '✅ Google Shopping — links de producto garantizados',
+  'tienda-directa':   '✅ Búsqueda directa en tienda',
+  'duckduckgo':       '🌐 DuckDuckGo',
+  'duckduckgo-html':  '🌐 DuckDuckGo',
+  'serper':           '✅ Google Shopping',
+  'brave':            '🌐 Brave Search',
 }
 
 let resultId = 0
 
 export default function InternetSearch({ onSelect, selected, gender }: InternetSearchProps) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [searched, setSearched] = useState(false)
-  const [provider, setProvider] = useState('')
-  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set(getSavedItems().map(i => i.id)))
-  const [onlyProducts, setOnlyProducts] = useState(true)
+  const [query, setQuery]         = useState('')
+  const [store, setStore]         = useState<Store>(gender === 'mama' ? 'temu' : 'all')
+  const [results, setResults]     = useState<SearchResult[]>([])
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState<string | null>(null)
+  const [searched, setSearched]   = useState(false)
+  const [provider, setProvider]   = useState('')
+  const [savedIds, setSavedIds]   = useState<Set<string>>(() => new Set(getSavedItems().map(i => i.id)))
 
-  const search = useCallback(async (q: string) => {
+  const search = useCallback(async (q: string, overrideStore?: Store) => {
     if (!q.trim()) return
     setQuery(q)
     setLoading(true)
@@ -71,8 +90,13 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
     setSearched(true)
     setResults([])
 
+    const activeStore = overrideStore ?? store
+    const siteParam = activeStore === 'all' ? '' : `&site=${activeStore}`
+
     try {
-      const res = await fetch(`/api/search-garments?q=${encodeURIComponent(q)}&gender=${gender}`)
+      const res = await fetch(
+        `/api/search-garments?q=${encodeURIComponent(q)}&gender=${gender}${siteParam}`
+      )
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Error al buscar')
       setResults(data.results ?? [])
@@ -82,7 +106,7 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
     } finally {
       setLoading(false)
     }
-  }, [gender])
+  }, [gender, store])
 
   const selectResult = (item: SearchResult) => {
     const g: Garment = {
@@ -93,7 +117,7 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
       color: '',
       colorHex: '#888888',
       type: query,
-      category: gender === 'mujer' ? 'dresses' : 'tops',
+      category: gender === 'mujer' || gender === 'mama' ? 'dresses' : 'tops',
       description: item.title,
       price: item.priceNum,
       emoji: '🔍',
@@ -111,7 +135,7 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
       id,
       name: item.title.slice(0, 80),
       brand: item.brand || item.source,
-      image: item.imageUrl,  // SearchResult uses imageUrl, SavedItem uses image
+      image: item.imageUrl,
       price: item.price,
       priceNum: item.priceNum,
       buyUrl: item.buyUrl,
@@ -122,22 +146,52 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
     if (navigator.vibrate) navigator.vibrate(50)
   }
 
+  const handleStoreChange = (s: Store) => {
+    setStore(s)
+    if (query.trim()) search(query, s)
+  }
+
   const chips = CHIPS[gender]
-  const visibleResults = onlyProducts ? results.filter(r => r.isProductUrl) : results
-  const productCount = results.filter(r => r.isProductUrl).length
+  const productResults = results.filter(r => r.isProductUrl)
+  const nonProductResults = results.filter(r => !r.isProductUrl)
+  // Always show only product URLs — that's the whole point
+  const visibleResults = productResults.length > 0 ? productResults : results
 
   return (
     <div className="flex flex-col gap-3">
+
+      {/* Store filter */}
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+        {(Object.keys(STORE_LABELS) as Store[]).map(s => (
+          <button
+            key={s}
+            onClick={() => handleStoreChange(s)}
+            className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition ${
+              store === s
+                ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                : 'glass text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            {STORE_LABELS[s]}
+          </button>
+        ))}
+      </div>
+
       {/* Search input */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm pointer-events-none">🌐</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm pointer-events-none">🔍</span>
           <input
             type="search"
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && search(query)}
-            placeholder={gender === 'mujer' ? 'vestido, blusa, conjunto…' : 'guayabera, polo, lino…'}
+            placeholder={
+              store === 'temu'   ? 'blusa, conjunto, vestido en Temu…' :
+              store === 'amazon' ? 'buscar en Amazon México…' :
+              store === 'shein'  ? 'buscar en Shein…' :
+              gender === 'mujer' ? 'vestido, blusa, conjunto…' : 'guayabera, polo, lino…'
+            }
             className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-3 text-white placeholder-gray-600 outline-none focus:border-brand-500/50 transition"
           />
         </div>
@@ -167,7 +221,9 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
       {loading && (
         <div className="flex flex-col items-center gap-3 py-10">
           <div className="w-8 h-8 rounded-full border-2 border-brand-500/30 border-t-brand-500 animate-spin" />
-          <p className="text-gray-500 text-sm">Buscando en internet…</p>
+          <p className="text-gray-500 text-sm">
+            Buscando en {store === 'all' ? 'Temu y Amazon' : STORE_LABELS[store]}…
+          </p>
         </div>
       )}
 
@@ -187,40 +243,39 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
       {/* Results */}
       {results.length > 0 && !loading && (
         <div className="flex flex-col gap-3">
-          {/* Filter row */}
+          {/* Summary row */}
           <div className="flex items-center justify-between gap-2">
-            <p className="text-gray-600 text-xs">
-              {visibleResults.length} resultado{visibleResults.length !== 1 ? 's' : ''}
-              {onlyProducts && productCount < results.length && (
-                <span className="text-brand-400 ml-1">(solo productos directos)</span>
+            <div>
+              <p className="text-xs text-gray-500">
+                {visibleResults.length} prenda{visibleResults.length !== 1 ? 's' : ''} con link de compra
+              </p>
+              {provider && (
+                <p className="text-[10px] text-gray-700 mt-0.5">
+                  {PROVIDER_LABEL[provider] ?? provider}
+                </p>
               )}
-            </p>
-            <button
-              onClick={() => setOnlyProducts(p => !p)}
-              className={`text-[10px] font-semibold px-2 py-1 rounded-full transition ${
-                onlyProducts
-                  ? 'bg-brand-500/20 text-brand-400 border border-brand-500/30'
-                  : 'glass text-gray-500'
-              }`}
-            >
-              {onlyProducts ? '🛍️ Solo productos' : '🌐 Todos'}
-            </button>
+            </div>
+            {nonProductResults.length > 0 && productResults.length > 0 && (
+              <span className="text-[10px] text-gray-700">
+                +{nonProductResults.length} sin link directo
+              </span>
+            )}
           </div>
 
-          {visibleResults.length === 0 && (
-            <div className="text-center py-6 glass rounded-2xl">
-              <p className="text-sm text-gray-400">Sin páginas de producto directo.</p>
-              <button onClick={() => setOnlyProducts(false)} className="text-brand-400 text-xs mt-1 underline">
-                Ver todos los resultados →
-              </button>
+          {/* Empty products — show all */}
+          {productResults.length === 0 && results.length > 0 && (
+            <div className="glass rounded-2xl p-3 text-center">
+              <p className="text-xs text-gray-500">
+                No se encontraron links directos de producto. Prueba cambiar la tienda o el término de búsqueda.
+              </p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             {visibleResults.map((item, i) => {
               const isSelected = selected?.buyUrl === item.buyUrl
-              const savedId = `saved-${item.buyUrl}`
-              const saved = savedIds.has(savedId)
+              const savedId    = `saved-${item.buyUrl}`
+              const saved      = savedIds.has(savedId)
 
               return (
                 <div
@@ -228,7 +283,7 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
                   className={`relative flex flex-col rounded-2xl overflow-hidden transition ${isSelected ? 'card-selected' : 'card'} animate-slide-up`}
                   style={{ animationDelay: `${i * 30}ms` }}
                 >
-                  {/* Image */}
+                  {/* Image — tap to seleccionar para try-on */}
                   <button onClick={() => selectResult(item)} className="relative w-full focus:outline-none">
                     <div className="relative overflow-hidden bg-white/5" style={{ aspectRatio: '3/4' }}>
                       {item.imageUrl ? (
@@ -246,21 +301,17 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl text-gray-600">🛍️</div>
                       )}
-                      {/* Overlay */}
+
+                      {/* Overlay info */}
                       <div className="absolute inset-x-0 bottom-0 card-overlay p-2">
-                        <p className="text-[10px] text-white/60 uppercase tracking-wider">{item.source}</p>
+                        <p className="text-[10px] text-white/50 uppercase tracking-wider">{item.source}</p>
                         <p className="text-xs text-white font-bold leading-tight line-clamp-2">{item.title}</p>
                         {item.price && (
-                          <p className="text-brand-400 text-xs font-bold mt-0.5">{item.price}</p>
+                          <p className="text-brand-400 text-sm font-black mt-0.5">{item.price}</p>
                         )}
                       </div>
-                      {/* Product badge */}
-                      {item.isProductUrl && (
-                        <span className="absolute top-2 left-2 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                          style={{ background: '#16a34a22', border: '1px solid #16a34a55', color: '#4ade80' }}>
-                          ✓ Producto
-                        </span>
-                      )}
+
+                      {/* Selected check */}
                       {isSelected && (
                         <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center">
                           <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -271,26 +322,32 @@ export default function InternetSearch({ onSelect, selected, gender }: InternetS
                     </div>
                   </button>
 
-                  {/* Actions */}
+                  {/* Action buttons */}
                   <div className="p-2 flex gap-1.5">
+                    {/* BUY — primary action, always visible */}
                     <a
                       href={item.buyUrl}
                       target="_blank"
                       rel="noreferrer"
                       onClick={e => e.stopPropagation()}
-                      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-white transition"
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-bold transition"
+                      style={{
+                        background: 'linear-gradient(135deg, #f97316, #fb923c)',
+                        color: '#fff',
+                      }}
                     >
-                      🛍️ Ver
+                      Comprar ↗
                     </a>
+
+                    {/* Save */}
                     <button
-                      onClick={() => saved ? undefined : handleSave(item)}
+                      onClick={() => !saved && handleSave(item)}
                       disabled={saved}
-                      className={`w-8 h-7 flex items-center justify-center rounded-lg text-xs transition ${
+                      title={saved ? 'Guardado' : 'Guardar en mi catálogo'}
+                      className={`w-9 flex items-center justify-center rounded-xl text-sm transition ${
                         saved ? 'text-brand-400' : 'text-gray-600 hover:text-brand-400'
                       }`}
                       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-                      title={saved ? 'Guardado' : 'Guardar en mi catálogo'}
                     >
                       {saved ? '🔖' : '＋'}
                     </button>

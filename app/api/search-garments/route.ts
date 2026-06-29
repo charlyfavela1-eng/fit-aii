@@ -18,21 +18,31 @@ function isProductUrl(url: string): boolean {
     const path = u.pathname.toLowerCase()
     const host = u.hostname.toLowerCase()
 
+    // Temu: /mx/slug-g-601099582759392.html
+    if (host.includes('temu.com') && /-g-\d{6,}\.html/.test(path)) return true
+    // Generic product paths
     if (path.includes('/pdp/')) return true
     if (path.includes('/product/')) return true
     if (path.includes('/item/')) return true
-    if (host.includes('amazon') && path.includes('/dp/')) return true
+    // Amazon: /dp/ASIN
+    if (host.includes('amazon') && /\/dp\/[A-Z0-9]{10}/.test(path)) return true
+    // Zara
     if (host.includes('zara.com') && /\-p\d{7,9}\.html/.test(path)) return true
+    // H&M
     if (host.includes('hm.com') && path.includes('productpage')) return true
+    // Shein
     if (host.includes('shein') && (/-p-\d+/.test(path) || /-p\d+/.test(path))) return true
+    // Liverpool
     if (host.includes('liverpool') && /\/\d{7,13}$/.test(path.split('?')[0])) return true
+    // MercadoLibre
     if (host.includes('mercadolibre') && /\/p\/ML/.test(path)) return true
-    // Shopify product pages: /products/[slug] with no further segments
+    // Shopify /products/[slug]
     if (/\/products\/[a-z0-9\-]{5,}$/.test(path)) return true
-    // Long slug as last segment in 3+ segment path = likely product
+    // Long slug as last segment (fallback)
     const segs = path.split('/').filter(Boolean)
     const last = segs[segs.length - 1] ?? ''
-    const categoryWords = ['hombre', 'mujer', 'ropa', 'camisas', 'vestidos', 'pantalones', 'zapatos', 'blazers', 'polos', 'chinos', 'vestido']
+    const categoryWords = ['hombre', 'mujer', 'ropa', 'camisas', 'vestidos', 'pantalones',
+      'zapatos', 'blazers', 'polos', 'chinos', 'vestido', 'search_result', 'category']
     if (
       segs.length >= 3 &&
       last.length > 20 &&
@@ -45,9 +55,10 @@ function isProductUrl(url: string): boolean {
 }
 
 const FASHION_DOMAINS = [
-  'liverpool', 'palacio', 'zara', 'hm.com', 'amazon', 'abito', 'costavana',
+  'temu', 'liverpool', 'palacio', 'zara', 'hm.com', 'amazon', 'abito', 'costavana',
   'mercadolibre', 'coppel', 'suburbia', 'shein', 'bershka', 'pull', 'asos',
   'mango', 'stradivarius', 'oysho', 'massimo', 'tommy', 'lacoste', 'gap',
+  'forever21', 'primark', 'h&m', 'famsa',
 ]
 
 function isFashionDomain(url: string): boolean {
@@ -57,33 +68,33 @@ function isFashionDomain(url: string): boolean {
   } catch { return false }
 }
 
-// ── DuckDuckGo image search (sin API key) ────────────────────────────────────
-async function searchDDGImages(q: string, gender: string): Promise<SearchResult[]> {
-  const genderTerm = gender === 'mujer' ? 'mujer' : 'hombre'
-  const query = `${q} ropa ${genderTerm} comprar mexico precio`
-  const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+function sourceName(url: string): string {
+  try { return new URL(url).hostname.replace('www.', '').split('.')[0] } catch { return '' }
+}
 
-  // Step 1: obtain vqd token
+// ── DDG image search — genérica o con site: ───────────────────────────────────
+const DDG_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+
+async function ddgImageSearch(query: string): Promise<SearchResult[]> {
+  // Step 1: get vqd token
   const pageRes = await fetch(
     `https://duckduckgo.com/?q=${encodeURIComponent(query)}&iax=images&ia=images`,
     {
-      headers: { 'User-Agent': ua, 'Accept-Language': 'es-MX,es;q=0.9' },
+      headers: { 'User-Agent': DDG_UA, 'Accept-Language': 'es-MX,es;q=0.9' },
       signal: AbortSignal.timeout(9000),
     }
   )
   if (!pageRes.ok) throw new Error(`DDG page ${pageRes.status}`)
   const html = await pageRes.text()
+  const vqd = html.match(/vqd=["']([^"']+)["']/)?.[1]
+  if (!vqd) throw new Error('No vqd token')
 
-  const vqdMatch = html.match(/vqd=["']([^"']+)["']/)
-  if (!vqdMatch) throw new Error('No vqd token')
-  const vqd = vqdMatch[1]
-
-  // Step 2: fetch image results
+  // Step 2: image results
   const imgRes = await fetch(
     `https://duckduckgo.com/i.js?q=${encodeURIComponent(query)}&vqd=${encodeURIComponent(vqd)}&o=json&p=1&f=,,,,,&l=es-mx`,
     {
       headers: {
-        'User-Agent': ua,
+        'User-Agent': DDG_UA,
         'Accept': 'application/json, */*; q=0.01',
         'Referer': 'https://duckduckgo.com/',
         'X-Requested-With': 'XMLHttpRequest',
@@ -92,48 +103,42 @@ async function searchDDGImages(q: string, gender: string): Promise<SearchResult[
     }
   )
   if (!imgRes.ok) throw new Error(`DDG images ${imgRes.status}`)
-
   const data = await imgRes.json() as {
     results?: Array<{ title: string; image: string; thumbnail: string; url: string; source: string }>
   }
 
   return (data.results ?? [])
-    .filter(r => isFashionDomain(r.url))
-    .map(r => {
-      let domain = ''
-      try { domain = new URL(r.url).hostname.replace('www.', '') } catch { /* */ }
-      const product = isProductUrl(r.url)
-      return {
-        title: r.title,
-        brand: r.source || domain,
-        price: '',
-        priceNum: 0,
-        imageUrl: r.image || r.thumbnail,
-        buyUrl: r.url,
-        source: domain,
-        isProductUrl: product,
-      }
-    })
-    .sort((a, b) => (b.isProductUrl ? 1 : 0) - (a.isProductUrl ? 1 : 0))
-    .slice(0, 20)
+    .filter(r => r.url && r.image && isFashionDomain(r.url))
+    .map(r => ({
+      title: r.title,
+      brand: r.source || sourceName(r.url),
+      price: '',
+      priceNum: 0,
+      imageUrl: r.image || r.thumbnail,
+      buyUrl: r.url,
+      source: sourceName(r.url),
+      isProductUrl: isProductUrl(r.url),
+    }))
 }
 
-// ── DuckDuckGo HTML fallback (sin imágenes) ───────────────────────────────────
-async function searchDDGHtml(q: string, gender: string): Promise<SearchResult[]> {
-  const genderTerm = gender === 'mujer' ? 'mujer' : 'hombre'
-  const query = encodeURIComponent(`${q} ropa ${genderTerm} precio mexico comprar`)
-  const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-  const res = await fetch(`https://html.duckduckgo.com/html/?q=${query}`, {
-    headers: { 'User-Agent': ua, 'Accept-Language': 'es-MX,es;q=0.9' },
-    signal: AbortSignal.timeout(9000),
-  })
+// ── DDG HTML fallback (sin imágenes) ─────────────────────────────────────────
+async function ddgHtmlSearch(query: string): Promise<SearchResult[]> {
+  const res = await fetch(
+    `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`,
+    {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'es-MX,es;q=0.9',
+      },
+      signal: AbortSignal.timeout(9000),
+    }
+  )
   if (!res.ok) throw new Error(`DDG HTML ${res.status}`)
   const html = await res.text()
 
   const results: SearchResult[] = []
   const linkRe = /class="result__a"[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g
   const snippetRe = /class="result__snippet"[^>]*>([^<]+)</g
-
   const links: { url: string; title: string }[] = []
   let m
   while ((m = linkRe.exec(html)) !== null) {
@@ -141,47 +146,44 @@ async function searchDDGHtml(q: string, gender: string): Promise<SearchResult[]>
     if (url.includes('uddg=')) {
       try { url = decodeURIComponent(url.split('uddg=')[1].split('&')[0]) } catch { /* */ }
     }
-    if (url.startsWith('http') && !url.includes('duckduckgo.com')) {
+    if (url.startsWith('http') && !url.includes('duckduckgo.com'))
       links.push({ url, title: m[2].trim() })
-    }
   }
   const snippets: string[] = []
   while ((m = snippetRe.exec(html)) !== null) snippets.push(m[1].trim())
 
   links
     .filter(l => isFashionDomain(l.url))
-    .slice(0, 16)
+    .slice(0, 20)
     .forEach((l, i) => {
       const snippet = snippets[i] ?? ''
-      const product = isProductUrl(l.url)
       results.push({
         title: l.title,
-        brand: (() => { try { return new URL(l.url).hostname.replace('www.', '').split('.')[0] } catch { return '' } })(),
+        brand: sourceName(l.url),
         price: extractPrice(snippet),
         priceNum: parsePrice(snippet),
         imageUrl: '',
         buyUrl: l.url,
-        source: (() => { try { return new URL(l.url).hostname.replace('www.', '') } catch { return '' } })(),
-        isProductUrl: product,
+        source: sourceName(l.url),
+        isProductUrl: isProductUrl(l.url),
       })
     })
-
   return results.sort((a, b) => (b.isProductUrl ? 1 : 0) - (a.isProductUrl ? 1 : 0))
 }
 
-// ── Serper.dev ───────────────────────────────────────────────────────────────
+// ── Serper.dev Google Shopping ────────────────────────────────────────────────
 async function searchSerper(q: string, key: string, gender: string): Promise<SearchResult[]> {
-  const genderTerm = gender === 'mujer' ? 'mujer' : 'hombre'
+  const genderTerm = gender === 'hombre' ? 'hombre' : 'mujer'
   const res = await fetch('https://google.serper.dev/shopping', {
     method: 'POST',
     headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ q: `${q} ropa ${genderTerm} mexico`, gl: 'mx', hl: 'es', num: 20 }),
+    body: JSON.stringify({ q: `${q} ${genderTerm} mexico`, gl: 'mx', hl: 'es', num: 20 }),
   })
   if (!res.ok) throw new Error(`Serper ${res.status}`)
   const data = await res.json()
   return ((data.shopping ?? []) as { title: string; source?: string; link: string; price?: string; imageUrl?: string }[])
-    .filter(i => i.imageUrl)
-    .slice(0, 16)
+    .filter(i => i.imageUrl && i.link)
+    .slice(0, 20)
     .map(i => ({
       title: i.title,
       brand: i.source ?? '',
@@ -190,37 +192,54 @@ async function searchSerper(q: string, key: string, gender: string): Promise<Sea
       imageUrl: i.imageUrl ?? '',
       buyUrl: i.link,
       source: i.source ?? '',
-      isProductUrl: isProductUrl(i.link),
+      isProductUrl: true, // Google Shopping always returns product pages
     }))
 }
 
-// ── Brave Search ─────────────────────────────────────────────────────────────
-async function searchBrave(q: string, key: string, gender: string): Promise<SearchResult[]> {
-  const genderTerm = gender === 'mujer' ? 'mujer' : 'hombre'
-  const query = encodeURIComponent(`${q} ropa ${genderTerm} comprar mexico`)
-  const res = await fetch(
-    `https://api.search.brave.com/res/v1/web/search?q=${query}&count=20&search_lang=es&country=MX&safesearch=off`,
-    { headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key } }
+// ── Búsqueda dirigida por tienda ──────────────────────────────────────────────
+// Busca con "site:tienda.com" para garantizar links de producto reales
+async function searchByStore(q: string, store: string, gender: string): Promise<SearchResult[]> {
+  const genderTerm = gender === 'hombre' ? 'hombre' : 'mujer'
+  const query = `site:${store} ${q} ${genderTerm}`
+  try {
+    const results = await ddgImageSearch(query)
+    // If site: search gives no images, try HTML
+    if (results.length === 0) {
+      const htmlResults = await ddgHtmlSearch(query)
+      return htmlResults.filter(r => isProductUrl(r.buyUrl))
+    }
+    return results.filter(r => isProductUrl(r.buyUrl))
+  } catch {
+    const htmlResults = await ddgHtmlSearch(query)
+    return htmlResults.filter(r => isProductUrl(r.buyUrl))
+  }
+}
+
+// ── Búsqueda multi-tienda en paralelo ─────────────────────────────────────────
+async function searchMultiStore(q: string, gender: string, site: string | null): Promise<SearchResult[]> {
+  const stores = site === 'temu'   ? ['temu.com']
+               : site === 'amazon' ? ['amazon.com.mx']
+               : site === 'shein'  ? ['shein.com']
+               : ['temu.com', 'amazon.com.mx']   // default: ambas
+
+  const settled = await Promise.allSettled(
+    stores.map(s => searchByStore(q, s, gender))
   )
-  if (!res.ok) throw new Error(`Brave ${res.status}`)
-  const data = await res.json()
-  const results = (data.web?.results ?? []) as {
-    title: string; url: string; description?: string;
-    thumbnail?: { src?: string }; meta_url?: { hostname?: string }
-  }[]
-  return results
-    .filter(r => r.thumbnail?.src)
-    .slice(0, 16)
-    .map(r => ({
-      title: r.title,
-      brand: r.meta_url?.hostname?.replace('www.', '') ?? '',
-      price: extractPrice(r.description ?? ''),
-      priceNum: parsePrice(r.description ?? ''),
-      imageUrl: r.thumbnail?.src ?? '',
-      buyUrl: r.url,
-      source: r.meta_url?.hostname?.replace('www.', '') ?? '',
-      isProductUrl: isProductUrl(r.url),
-    }))
+
+  // Merge and deduplicate by buyUrl
+  const seen = new Set<string>()
+  const merged: SearchResult[] = []
+  for (const r of settled) {
+    if (r.status === 'fulfilled') {
+      for (const item of r.value) {
+        if (!seen.has(item.buyUrl)) {
+          seen.add(item.buyUrl)
+          merged.push(item)
+        }
+      }
+    }
+  }
+  return merged
 }
 
 function extractPrice(text: string): string {
@@ -236,38 +255,45 @@ function parsePrice(text: string): number {
 export async function GET(req: NextRequest) {
   const q      = req.nextUrl.searchParams.get('q')
   const gender = req.nextUrl.searchParams.get('gender') ?? 'mujer'
+  const site   = req.nextUrl.searchParams.get('site') ?? null  // 'temu' | 'amazon' | 'shein' | null
+
   if (!q) return NextResponse.json({ error: 'Missing query' }, { status: 400 })
 
   const serperKey = process.env.SERPER_API_KEY
-  const braveKey  = process.env.BRAVE_API_KEY
 
   try {
-    let results: SearchResult[] = []
-    let provider = 'duckduckgo'
-
+    // 1. Serper Google Shopping — más confiable, siempre links de producto
     if (serperKey) {
-      results = await searchSerper(q, serperKey, gender)
-      provider = 'serper'
-    } else if (braveKey) {
-      results = await searchBrave(q, braveKey, gender)
-      provider = 'brave'
-    } else {
-      // Try DDG image search first (has images), fall back to HTML
-      try {
-        results = await searchDDGImages(q, gender)
-        provider = 'duckduckgo-images'
-      } catch {
-        results = await searchDDGHtml(q, gender)
-        provider = 'duckduckgo'
-      }
+      const results = await searchSerper(q, serperKey, gender)
+      const filtered = site
+        ? results.filter(r => r.source.toLowerCase().includes(site))
+        : results
+      return NextResponse.json({ results: filtered, provider: 'google-shopping' })
     }
 
-    return NextResponse.json({ results, provider })
-  } catch (e) {
+    // 2. Búsqueda dirigida por tienda con site: operator — links reales garantizados
+    const results = await searchMultiStore(q, gender, site)
+    if (results.length >= 3) {
+      return NextResponse.json({ results: results.slice(0, 20), provider: 'tienda-directa' })
+    }
+
+    // 3. Fallback: DDG general con filter de producto
+    const fallback = await ddgImageSearch(
+      `${q} ${gender === 'hombre' ? 'hombre' : 'mujer'} comprar mexico precio`
+    )
+    const onlyProducts = fallback.filter(r => r.isProductUrl)
+    return NextResponse.json({
+      results: (onlyProducts.length >= 3 ? onlyProducts : fallback).slice(0, 20),
+      provider: 'duckduckgo',
+    })
+
+  } catch {
     try {
-      const results = await searchDDGHtml(q, gender)
-      return NextResponse.json({ results, provider: 'duckduckgo' })
-    } catch {
+      const results = await ddgHtmlSearch(
+        `${q} ${gender === 'hombre' ? 'hombre' : 'mujer'} comprar mexico precio`
+      )
+      return NextResponse.json({ results, provider: 'duckduckgo-html' })
+    } catch (e) {
       return NextResponse.json({ error: e instanceof Error ? e.message : 'Search failed' }, { status: 500 })
     }
   }
