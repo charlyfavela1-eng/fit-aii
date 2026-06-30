@@ -8,8 +8,9 @@ import FitBadge from '@/components/FitBadge'
 import { Garment, PersonSize, buildTryOnPrompt, getSizeDiff } from '@/lib/catalog'
 // PersonSize values for the inline size picker in the selection panel
 import { hasCredits, useCredit, getCredits } from '@/lib/credits'
+import { buildPollinationsUrl, OUTFIT_EXAMPLES, buildProductPhotoPrompt } from '@/lib/pollinations'
 
-type View = 'landing' | 'photo' | 'catalog' | 'generating' | 'result'
+type View = 'landing' | 'photo' | 'catalog' | 'generating' | 'result' | 'inspiration'
 
 const STEPS = [
   { key: 'photo'   as View, label: 'Foto' },
@@ -30,19 +31,28 @@ export default function Home() {
   const [garmentUrlError, setGarmentUrlError] = useState<string | null>(null)
   const [credits, setCredits]           = useState(1)
   const [resultImage, setResultImage]   = useState<string | null>(null)
+  const [isFreeResult, setIsFreeResult] = useState(false)
   const [error, setError]               = useState<string | null>(null)
   const [generatingMsg, setGeneratingMsg] = useState(0)
   const pollRef = useRef<boolean>(false)
 
   useEffect(() => { setCredits(getCredits()) }, [])
 
-  const loadingMessages = [
-    'Analizando tu silueta…',
-    'Aplicando la prenda con IA…',
-    'Ajustando proporciones y talla…',
-    'Añadiendo detalles de iluminación…',
-    'Finalizando tu look…',
-  ]
+  const loadingMessages = isFreeResult
+    ? [
+        'Subiendo imágenes a HuggingFace…',
+        'En cola — IDM-VTON gratuito…',
+        'Aplicando la prenda a tu foto…',
+        'Generando resultado (puede tardar 1-2 min)…',
+        'Casi listo…',
+      ]
+    : [
+        'Analizando tu silueta…',
+        'Aplicando la prenda con IA…',
+        'Ajustando proporciones y talla…',
+        'Añadiendo detalles de iluminación…',
+        'Finalizando tu look…',
+      ]
 
   useEffect(() => {
     if (view !== 'generating') return
@@ -175,12 +185,55 @@ export default function Home() {
     setCredits(getCredits())
   }
 
+  const handleFreeGenerate = useCallback(async () => {
+    if (!selectedGarment) return
+
+    // If we have both the person photo and a garment image → use HuggingFace IDM-VTON (real try-on)
+    const garmentSrc = garmentBase64 || (selectedGarment as any).imageUrl || null
+    if (photoBase64 && garmentSrc) {
+      setView('generating')
+      setError(null)
+      setIsFreeResult(true)
+      try {
+        const res = await fetch('/api/tryon-free', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            personBase64: photoBase64,
+            garmentBase64: garmentBase64 || undefined,
+            garmentUrl: !garmentBase64 ? garmentSrc : undefined,
+            garmentDescription: selectedGarment.name,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+        setResultImage(data.imageUrl)
+        setView('result')
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        setError(msg)
+        setIsFreeResult(false)
+        setView('catalog')
+      }
+      return
+    }
+
+    // Fallback: no garment image → Pollinations text-to-image
+    const desc = [selectedGarment.name, (selectedGarment as any).description].filter(Boolean).join(', ')
+    const prompt = `fashion photo, person wearing ${desc}, full body, white studio background, professional lighting, high quality clothing`
+    const url = buildPollinationsUrl(prompt, { width: 768, height: 1024, enhance: true })
+    setIsFreeResult(true)
+    setResultImage(url)
+    setView('result')
+  }, [selectedGarment, photoBase64, garmentBase64])
+
   const tryAnotherGarment = () => {
     pollRef.current = false
     setSelectedGarment(null)
     setGarmentBase64(null); setGarmentPreview(null)
     setGarmentUrl(''); setGarmentUrlError(null)
     setResultImage(null); setError(null)
+    setIsFreeResult(false)
     setCredits(getCredits())
     setView('catalog')
   }
@@ -263,6 +316,17 @@ export default function Home() {
             Probar gratis →
           </button>
           <p className="text-gray-600 text-xs">1 prueba gratuita · Sin registro</p>
+
+          <button
+            onClick={() => setView('inspiration')}
+            className="mt-4 glass rounded-2xl px-6 py-3 text-sm font-semibold text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            ✨ Generar inspiración de outfit gratis
+          </button>
+
+          <a href="/negocio" className="mt-3 text-xs text-white/30 hover:text-brand-400 transition-colors">
+            🏪 ¿Dueño de tienda? Crea tu catálogo →
+          </a>
         </div>
 
         {/* How it works */}
@@ -288,6 +352,11 @@ export default function Home() {
     )
   }
 
+  // ─── INSPIRATION VIEW ───────────────────────────────────────────────────────
+  if (view === 'inspiration') {
+    return <InspirationView onBack={() => setView('landing')} onTryOn={() => setView('photo')} />
+  }
+
   // ─── RESULT VIEW ────────────────────────────────────────────────────────────
   if (view === 'result' && resultImage) {
     return (
@@ -310,13 +379,28 @@ export default function Home() {
 
         <div className="flex-1 overflow-y-auto px-4 pb-6 pb-safe flex flex-col gap-4">
           <div>
-            <h2 className="text-2xl font-black mb-1">¡Así te vería! ✨</h2>
-            {selectedGarment && personSize && (
-              <FitBadge garmentSize={selectedGarment.size} personSize={personSize} compact />
+            <h2 className="text-2xl font-black mb-1">
+              {isFreeResult ? '✨ Inspiración del look' : '¡Así te vería! ✨'}
+            </h2>
+            {isFreeResult ? (
+              <p className="text-xs text-white/40">IDM-VTON · HuggingFace · Gratis · Sin créditos</p>
+            ) : (
+              selectedGarment && personSize && (
+                <FitBadge garmentSize={selectedGarment.size} personSize={personSize} compact />
+              )
             )}
           </div>
 
-          {/* Before / After */}
+          {/* Free result: full image */}
+          {isFreeResult ? (
+            <div className="rounded-2xl overflow-hidden relative">
+              <img src={resultImage!} alt="Look generado" className="w-full rounded-2xl" />
+              <div className="absolute top-2 right-2 glass-dark text-white text-[10px] font-bold px-2 py-1 rounded-full">
+                Pollinations.AI ✨
+              </div>
+            </div>
+          ) : (
+          /* Before / After */
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <p className="text-xs text-gray-500 font-semibold text-center">Tu foto</p>
@@ -327,13 +411,14 @@ export default function Home() {
             <div className="flex flex-col gap-1.5">
               <p className="text-xs text-brand-400 font-semibold text-center">Resultado IA</p>
               <div className="rounded-2xl overflow-hidden relative" style={{ aspectRatio: '3/4' }}>
-                <img src={resultImage} alt="Resultado" className="w-full h-full object-cover" />
+                <img src={resultImage!} alt="Resultado" className="w-full h-full object-cover" />
                 <div className="absolute top-2 right-2 bg-brand-500/90 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                   IA ✨
                 </div>
               </div>
             </div>
           </div>
+          )}
 
           {/* Fit info */}
           {selectedGarment && personSize && (
@@ -522,9 +607,20 @@ export default function Home() {
             </div>
 
             {/* Generate button */}
-            <div className="px-3 pb-3">
+            <div className="px-3 pb-3 flex flex-col gap-2">
               {credits <= 0 ? (
-                <p className="text-center text-gray-600 text-xs py-2">Sin créditos disponibles</p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={handleFreeGenerate}
+                    disabled={!selectedGarment}
+                    className="btn-primary w-full py-3.5 text-base font-bold disabled:opacity-40"
+                  >
+                    🤗 Probármelo gratis (HuggingFace)
+                  </button>
+                  <p className="text-center text-white/30 text-xs">
+                    Usa tu foto real · IDM-VTON · puede tardar ~1-2 min
+                  </p>
+                </div>
               ) : !personSize ? (
                 <div className="flex items-center justify-center gap-2 py-2">
                   <span className="text-gray-500 text-xs">↑ Selecciona tu talla para continuar</span>
@@ -630,6 +726,128 @@ export default function Home() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Inspiration View (Pollinations.AI) ─────────────────────────────────────
+function InspirationView({ onBack, onTryOn }: { onBack: () => void; onTryOn: () => void }) {
+  const [prompt, setPrompt]     = useState('')
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(false)
+
+  const generate = (customPrompt?: string) => {
+    const p = customPrompt ?? prompt.trim()
+    if (!p) return
+    setError(false)
+    setLoading(true)
+    setImageUrl(null)
+    const fashionPrompt = p.includes('fashion') || p.includes('photo')
+      ? p
+      : `fashion photo, ${p}, white studio background, full body, professional lighting, high quality clothing`
+    const url = buildPollinationsUrl(fashionPrompt, { width: 768, height: 1024, enhance: true })
+    setImageUrl(url)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-hero flex flex-col">
+      {/* Header */}
+      <header className="flex items-center justify-between px-5 py-4 pt-safe">
+        <button onClick={onBack} className="text-white/50 hover:text-white text-2xl leading-none">←</button>
+        <h1 className="text-lg font-bold text-gradient">Inspiración IA</h1>
+        <div className="glass px-2 py-1 rounded-full text-[10px] text-white/30">Pollinations.AI</div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto px-5 pb-10">
+        {/* Prompt input */}
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && generate()}
+            placeholder="Ej: vestido rojo floral para verano..."
+            className="flex-1 glass rounded-2xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none"
+          />
+          <button
+            onClick={() => generate()}
+            disabled={!prompt.trim() || loading}
+            className="btn-primary px-5 rounded-2xl font-bold text-sm disabled:opacity-40"
+          >
+            ✨
+          </button>
+        </div>
+
+        {/* Quick examples */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {OUTFIT_EXAMPLES.map((ex, i) => (
+            <button
+              key={i}
+              onClick={() => { setPrompt(ex.label.split(' ').slice(1).join(' ')); generate(ex.prompt) }}
+              className="glass rounded-full px-3 py-1.5 text-xs text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              {ex.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Generated image */}
+        {imageUrl && (
+          <div className="rounded-2xl overflow-hidden relative">
+            {loading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 rounded-2xl">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-white/60 text-xs">Generando con Pollinations.AI…</p>
+                </div>
+              </div>
+            )}
+            {error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10 rounded-2xl">
+                <div className="text-center px-6">
+                  <p className="text-white mb-3 text-sm">No se pudo generar la imagen</p>
+                  <button onClick={() => generate()} className="btn-primary px-4 py-2 rounded-xl text-sm font-bold">
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            )}
+            <img
+              src={imageUrl}
+              alt="Outfit generado"
+              className="w-full rounded-2xl"
+              onLoad={() => setLoading(false)}
+              onError={() => { setLoading(false); setError(true) }}
+            />
+          </div>
+        )}
+
+        {!imageUrl && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3 text-white/30">
+            <div className="text-6xl">✨</div>
+            <p className="text-sm">Escribe una descripción o elige un ejemplo</p>
+            <p className="text-xs">Gratis · Sin registro · Pollinations.AI</p>
+          </div>
+        )}
+
+        {imageUrl && !loading && !error && (
+          <div className="mt-4 flex gap-3">
+            <button
+              onClick={() => generate()}
+              className="flex-1 glass rounded-2xl py-3 text-sm font-bold text-white/70 hover:text-white transition-colors"
+            >
+              🔄 Regenerar
+            </button>
+            <button
+              onClick={onTryOn}
+              className="flex-1 btn-primary rounded-2xl py-3 text-sm font-bold"
+            >
+              📸 Probármelo
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
