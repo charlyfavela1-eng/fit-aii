@@ -19,6 +19,18 @@ export default function Camera({ onCapture }: CameraProps) {
     setLoading(true)
     try {
       if (stream) stream.getTracks().forEach(t => t.stop())
+
+      // getUserMedia solo existe en contexto seguro. Servida por http:// (que no sea
+      // localhost) el navegador ni siquiera define mediaDevices, y el catch de abajo
+      // reportaba "verifica los permisos" — un mensaje que manda al usuario a buscar
+      // un permiso que nunca se le pidio.
+      if (!window.isSecureContext) {
+        throw new DOMException('inseguro', 'SecurityError')
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new DOMException('no soportado', 'NotSupportedError')
+      }
+
       const s = await navigator.mediaDevices.getUserMedia({
         video: { facingMode, width: { ideal: 1080 }, height: { ideal: 1440 } },
         audio: false,
@@ -26,12 +38,44 @@ export default function Camera({ onCapture }: CameraProps) {
       setStream(s)
       setError(null)
       if (videoRef.current) videoRef.current.srcObject = s
-    } catch {
-      setError('No se pudo acceder a la cámara. Verifica los permisos del navegador.')
+    } catch (e) {
+      // Cada causa manda al usuario a un lugar distinto: decirle "revisa permisos"
+      // cuando el problema es que la pagina no va por HTTPS lo deja atorado.
+      const nombre = e instanceof DOMException ? e.name : ''
+      const porNombre: Record<string, string> = {
+        SecurityError: 'Esta página no va por HTTPS y el navegador no permite abrir la cámara. Usa el botón de abajo para tomar la foto.',
+        NotSupportedError: 'Este navegador no permite abrir la cámara aquí. Usa el botón de abajo para tomarla.',
+        NotAllowedError: 'Bloqueaste el permiso de la cámara. Puedes darlo desde el candado de la barra de direcciones, o usar el botón de abajo.',
+        NotFoundError: 'No encontramos ninguna cámara en este dispositivo. Sube una foto con el botón de abajo.',
+        NotReadableError: 'Otra aplicación está usando la cámara. Ciérrala y reintenta, o usa el botón de abajo.',
+      }
+      setError(porNombre[nombre] || 'No se pudo abrir la cámara. Usa el botón de abajo para tomar o subir la foto.')
     } finally {
       setLoading(false)
     }
   }, [stream])
+
+  /** Camino alterno: el input de archivo con `capture` abre la cámara nativa del
+   *  celular. Funciona sin HTTPS y sin pedir permiso de sitio, así que es la red de
+   *  seguridad cuando getUserMedia no está disponible. */
+  const desdeArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (!f.type.startsWith('image/')) {
+      setError('Ese archivo no es una imagen.')
+      return
+    }
+    const lector = new FileReader()
+    lector.onload = () => {
+      const dataUrl = String(lector.result)
+      setPreview(dataUrl)
+      setError(null)
+      stream?.getTracks().forEach(t => t.stop())
+      setStream(null)
+      onCapture(dataUrl.split(',')[1], dataUrl)
+    }
+    lector.readAsDataURL(f)
+  }
 
   const flipCamera = () => {
     const next = facing === 'user' ? 'environment' : 'user'
@@ -94,8 +138,21 @@ export default function Camera({ onCapture }: CameraProps) {
       <div className="flex flex-col items-center gap-4 p-8 rounded-2xl border border-red-900/50 bg-red-950/20">
         <div className="text-4xl">📵</div>
         <p className="text-red-400 text-sm text-center leading-relaxed">{error}</p>
-        <button onClick={() => startCamera(facing)} className="btn-primary px-6 py-3 text-sm">
-          Reintentar
+        <label className="btn-primary w-full py-4 text-base text-center cursor-pointer">
+          📸 Tomar o subir foto
+          <input
+            type="file"
+            accept="image/*"
+            capture="user"
+            onChange={desdeArchivo}
+            className="hidden"
+          />
+        </label>
+        <button
+          onClick={() => startCamera(facing)}
+          className="text-gray-400 text-xs underline hover:text-white transition"
+        >
+          Reintentar con la cámara del navegador
         </button>
       </div>
     )
@@ -120,6 +177,16 @@ export default function Camera({ onCapture }: CameraProps) {
         >
           {loading ? 'Conectando...' : 'Activar cámara'}
         </button>
+        <label className="w-full py-3 text-sm text-center cursor-pointer glass rounded-xl hover:bg-white/10 transition">
+          o toma la foto con tu cámara normal
+          <input
+            type="file"
+            accept="image/*"
+            capture="user"
+            onChange={desdeArchivo}
+            className="hidden"
+          />
+        </label>
         <p className="text-gray-600 text-xs text-center">
           Tu foto se procesa de forma privada y no se almacena
         </p>
