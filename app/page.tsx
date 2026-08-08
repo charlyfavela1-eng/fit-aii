@@ -5,8 +5,8 @@ import Camera from '@/components/Camera'
 import CatalogPicker from '@/components/CatalogPicker'
 import SizePicker from '@/components/SizePicker'
 import FitBadge from '@/components/FitBadge'
+import GarmentSearch from '@/components/GarmentSearch'
 import { Garment, PersonSize, buildTryOnPrompt, getSizeDiff } from '@/lib/catalog'
-import { hasCredits, useCredit, getCredits } from '@/lib/credits'
 
 type View = 'landing' | 'photo' | 'catalog' | 'generating' | 'result'
 
@@ -22,13 +22,24 @@ export default function Home() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [selectedGarment, setSelectedGarment] = useState<Garment | null>(null)
   const [personSize, setPersonSize] = useState<PersonSize | null>(null)
-  const [credits, setCredits] = useState(1)
+  const [credits, setCredits] = useState(0)
   const [resultImage, setResultImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [generatingMsg, setGeneratingMsg] = useState(0)
+  const [origen, setOrigen] = useState<'internet' | 'catalogo'>('internet')
   const pollRef = useRef<boolean>(false)
 
-  useEffect(() => { setCredits(getCredits()) }, [])
+  /* El saldo lo manda el servidor y punto. Antes vivia en localStorage, o sea
+     que cualquiera se escribia 9999 creditos desde la consola. */
+  const refrescarCreditos = useCallback(async () => {
+    try {
+      const r = await fetch('/api/creditos')
+      const d = await r.json()
+      if (typeof d.creditos === 'number') setCredits(d.creditos)
+    } catch { /* si no responde, se queda el ultimo saldo conocido */ }
+  }, [])
+
+  useEffect(() => { refrescarCreditos() }, [refrescarCreditos])
 
   const loadingMessages = [
     'Analizando tu silueta...',
@@ -53,13 +64,7 @@ export default function Home() {
 
   const handleGenerate = useCallback(async () => {
     if (!photoBase64 || !selectedGarment || !personSize) return
-    if (!hasCredits()) {
-      setError('Ya usaste tu crédito gratuito.')
-      return
-    }
 
-    useCredit()
-    setCredits(prev => Math.max(0, prev - 1))
     setView('generating')
     setError(null)
     pollRef.current = false
@@ -70,10 +75,13 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoBase64, prompt }),
+        // La foto de la prenda es lo que permite probarse ropa de otras
+        // paginas; sin ella el modelo se la inventa a partir del texto.
+        body: JSON.stringify({ photoBase64, prompt, garmentImageUrl: selectedGarment.imageUrl }),
       })
       const data = await res.json()
 
+      if (typeof data.creditos === 'number') setCredits(data.creditos)
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
 
       if (data.status === 'completed' && data.imageUrl) {
@@ -87,7 +95,7 @@ export default function Home() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error desconocido')
       setView('catalog')
-      setCredits(getCredits())
+      refrescarCreditos()
     }
   }, [photoBase64, selectedGarment, personSize])
 
@@ -105,11 +113,12 @@ export default function Home() {
           setView('result')
           return
         }
+        if (typeof data.creditos === 'number') setCredits(data.creditos)
         if (data.status === 'failed') throw new Error(data.error || 'Generación fallida')
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Error al obtener resultado')
         setView('catalog')
-        setCredits(getCredits())
+        refrescarCreditos()
         return
       }
     }
@@ -128,7 +137,7 @@ export default function Home() {
     setPersonSize(null)
     setResultImage(null)
     setError(null)
-    setCredits(getCredits())
+    refrescarCreditos()
   }
 
   const shareResult = async () => {
@@ -420,11 +429,39 @@ export default function Home() {
 
               <SizePicker value={personSize} onChange={setPersonSize} />
 
-              {selectedGarment && personSize && (
+              {/* El sello de talla solo tiene sentido con las prendas del
+                  catalogo, que traen medidas. De una foto de internet no se
+                  puede saber la talla, y ensenar "Talla perfecta" ahi seria
+                  inventarselo. */}
+              {selectedGarment && personSize && !selectedGarment.externa && (
                 <FitBadge garmentSize={selectedGarment.size} personSize={personSize} />
               )}
 
-              <CatalogPicker selected={selectedGarment} onSelect={setSelectedGarment} />
+              <div className="flex gap-2">
+                {([['internet', '🌐 De internet'], ['catalogo', '👗 Catálogo']] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setOrigen(id)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition ${
+                      origen === id
+                        ? 'bg-gradient-to-r from-brand-500 to-accent-500 text-white'
+                        : 'glass text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {origen === 'internet' ? (
+                <GarmentSearch
+                  personSize={personSize || 'M'}
+                  selected={selectedGarment}
+                  onSelect={setSelectedGarment}
+                />
+              ) : (
+                <CatalogPicker selected={selectedGarment} onSelect={setSelectedGarment} />
+              )}
 
               {credits <= 0 ? (
                 <div className="card p-5 text-center">

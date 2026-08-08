@@ -20,6 +20,42 @@ export interface Garment {
     length?: number
   }
   tags: string[]
+  /* Prendas que NO son del catalogo de ejemplo: las que el usuario busco en
+     Google, pego por enlace de tienda o subio de su galeria. `imageUrl` es la
+     foto real de la prenda y es lo que de verdad hace util al probador — sin
+     ella el modelo se inventa la prenda a partir del texto. */
+  imageUrl?: string
+  externa?: boolean
+  fuente?: string
+}
+
+/** Arma una prenda a partir de una foto de internet o de la galeria.
+ *  La talla se toma igual a la de la persona: de una foto no se puede saber la
+ *  talla, y fingir una diferencia mentiria en el resultado. */
+export function prendaExterna(
+  imageUrl: string,
+  titulo: string,
+  size: GarmentSize,
+  fuente = ''
+): Garment {
+  return {
+    id: `ext-${Math.random().toString(36).slice(2, 10)}`,
+    name: titulo.slice(0, 60) || 'Prenda',
+    brand: fuente || 'De internet',
+    size,
+    color: '',
+    colorHex: '#7c3aed',
+    type: 'prenda',
+    category: 'tops',
+    description: titulo,
+    price: 0,
+    emoji: '🛍️',
+    measurements: {},
+    tags: [],
+    imageUrl,
+    externa: true,
+    fuente,
+  }
 }
 
 export const catalog: Garment[] = [
@@ -148,6 +184,20 @@ export function getFitColor(diff: number): string {
 }
 
 export function buildTryOnPrompt(garment: Garment, personSize: PersonSize): string {
+  /* Con foto de la prenda el prompt cambia de trabajo: ya no tiene que
+     DESCRIBIRLA (el modelo la esta viendo), sino ordenar que respete a la
+     persona. Describirla ademas es contraproducente: si el texto y la imagen no
+     coinciden, el modelo inventa un promedio de los dos. */
+  if (garment.externa && garment.imageUrl) {
+    return [
+      'Take the garment shown in the second reference image and put it on the person in the first image.',
+      'Keep the person EXACTLY the same: same face, same body shape and proportions, same skin tone, same hair, same pose and same background.',
+      'Only the clothing changes. Reproduce the garment faithfully: same color, same pattern, same fabric texture, same cut and same length as the reference.',
+      `The person wears size ${personSize}, so the garment should fit them naturally, following the real shape of their body.`,
+      'Photorealistic result, natural lighting consistent with the original photo, no text and no watermarks.',
+    ].join(' ')
+  }
+
   const diff = getSizeDiff(garment.size, personSize)
   const fitDesc = getFitDescription(diff)
 

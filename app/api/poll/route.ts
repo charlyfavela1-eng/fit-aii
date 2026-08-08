@@ -1,32 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { consultar } from '@/lib/wavespeed'
+import { verificar, devolver, saldo } from '@/lib/creditos'
 
+export const runtime = 'nodejs'
+
+/* Consulta una generacion ya lanzada.
+ *
+ * Antes preguntaba a Atlas en `/prediction/{id}`; ahora a WaveSpeed en
+ * `/predictions/{id}/result`. Y si la generacion fallo, el credito se devuelve
+ * AQUI tambien: el cobro ocurre al lanzar, asi que una falla que aparece en el
+ * sondeo dejaria al cliente pagando por una imagen que nunca vio. */
 export async function GET(req: NextRequest) {
-  const predictionId = req.nextUrl.searchParams.get('id')
+  const id = req.nextUrl.searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'Falta el id' }, { status: 400 })
 
-  if (!predictionId) {
-    return NextResponse.json({ error: 'Missing prediction ID' }, { status: 400 })
+  const salida = await consultar(id)
+  const usuario = verificar(req.cookies.get('fitaii_uid')?.value)
+
+  if (salida.estado === 'failed') {
+    if (usuario) await devolver(usuario)
+    return NextResponse.json({
+      status: 'failed',
+      error: salida.error,
+      creditos: usuario ? await saldo(usuario) : undefined,
+    })
   }
 
-  const apiKey = process.env.ATLAS_API_KEY
-  const apiUrl = process.env.ATLAS_API_URL
-
-  const response = await fetch(`${apiUrl}/prediction/${predictionId}`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-  })
-
-  if (!response.ok) {
-    return NextResponse.json({ error: 'Poll failed' }, { status: response.status })
-  }
-
-  const data = await response.json()
-
-  if (data.status === 'succeeded' || data.status === 'completed') {
-    const imageUrl = data.output?.[0] ?? data.images?.[0] ?? data.image
-    return NextResponse.json({ status: 'completed', imageUrl })
-  }
-
-  if (data.status === 'failed') {
-    return NextResponse.json({ status: 'failed', error: data.error })
+  if (salida.estado === 'completed') {
+    return NextResponse.json({
+      status: 'completed',
+      imageUrl: salida.imagen,
+      creditos: usuario ? await saldo(usuario) : undefined,
+    })
   }
 
   return NextResponse.json({ status: 'pending' })
